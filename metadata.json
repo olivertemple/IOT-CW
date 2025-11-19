@@ -1,0 +1,5 @@
+{
+  "name": "SmartTap IoT Dashboard",
+  "description": "A real-time dashboard for connected beer taps. visualizes keg levels, consumption trends, and uses Gemini AI to recommend inventory orders based on popularity and usage patterns.",
+  "requestFramePermissions": []
+}
