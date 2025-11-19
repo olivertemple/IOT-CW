@@ -120,19 +120,40 @@ mqttClient.on('message', (topic, message) => {
 
     // Merge strategy: shallow merge of parsed payload (if JSON) into existing state.
     // This keeps a record of the last known runtime fields (e.g., currentLevelLiters, totalPoured, keg weight, temps).
-      // Normalize some common keys from device payloads to friendly runtime names
-      const normalised = Object.assign({}, parsed || {});
-      if (normalised.weight !== undefined && normalised.kegWeightCurrent === undefined) {
-        normalised.kegWeightCurrent = normalised.weight;
-      }
-      if (normalised.temp !== undefined && normalised.temperature === undefined) {
-        normalised.temperature = normalised.temp;
-      }
-      if (normalised.cellarTemp !== undefined && normalised.cellarTemp === undefined) {
-        normalised.cellarTemp = normalised.cellarTemp;
-      }
+    // Normalize some common keys from device payloads to friendly runtime names
+    const normalised = Object.assign({}, parsed || {});
+    if (normalised.weight !== undefined && normalised.kegWeightCurrent === undefined) {
+      normalised.kegWeightCurrent = normalised.weight;
+    }
+    if (normalised.temp !== undefined && normalised.temperature === undefined) {
+      normalised.temperature = normalised.temp;
+    }
+    if (normalised.cellarTemp !== undefined && normalised.cellarTemp === undefined) {
+      normalised.cellarTemp = normalised.cellarTemp;
+    }
+    // Support flow payloads that include `totalPoured` (per DEPLOYMENT.md)
+    if (normalised.totalPoured !== undefined && normalised.totalConsumedLiters === undefined) {
+      normalised.totalConsumedLiters = normalised.totalPoured;
+    }
 
-      const merged = Object.assign({}, existing, normalised || {});
+    const merged = Object.assign({}, existing, normalised || {});
+
+    // If this message contains flow totals, persist a daily aggregate so analytics are backed by DB
+    const prevTotal = existing.totalConsumedLiters !== undefined ? Number(existing.totalConsumedLiters) : 0;
+    const newTotal = merged.totalConsumedLiters !== undefined ? Number(merged.totalConsumedLiters) : prevTotal;
+    const delta = Math.max(0, newTotal - prevTotal);
+
+    if (delta > 0) {
+      const today = new Date().toISOString().slice(0,10);
+      db.get('SELECT total_poured FROM daily_stats WHERE date = ? AND tap_id = ?', [today, tapId], (err2, dr) => {
+        if (err2) return; // ignore
+        const existingPoured = dr && dr.total_poured ? Number(dr.total_poured) : 0;
+        const updated = existingPoured + delta;
+        const upsert = db.prepare('INSERT OR REPLACE INTO daily_stats (date, tap_id, total_poured) VALUES (?, ?, ?)');
+        upsert.run(today, tapId, updated, (uErr) => { if (uErr) console.error('Failed update daily_stats:', uErr.message); });
+        upsert.finalize();
+      });
+    }
 
     // Ensure there's at least an entry in taps for this id. If no taps row exists, create a minimal one.
     db.get('SELECT id FROM taps WHERE id = ?', [tapId], (err2, existsRow) => {
@@ -294,6 +315,31 @@ app.get('/api/history', (req, res) => {
       usage: r.usage_count
     }));
     
+    res.json(formatted);
+  });
+});
+
+// Get per-brand volume for a timeframe
+app.get('/api/volume', (req, res) => {
+  const { period } = req.query; // 'day', 'week', 'month', 'year'
+
+  let timeFilter = "'-1 day'";
+  if (period === 'week') timeFilter = "'-7 days'";
+  else if (period === 'month') timeFilter = "'-30 days'";
+  else if (period === 'year') timeFilter = "'-1 year'";
+
+  // Sum daily_stats.total_poured for the requested period, grouped by tap
+  const queryVol = `
+    SELECT t.id as tap_id, t.beer_name as beer_name, COALESCE(SUM(d.total_poured), 0) as total_poured
+    FROM taps t
+    LEFT JOIN daily_stats d ON t.id = d.tap_id AND d.date > date('now', ${timeFilter})
+    GROUP BY t.id
+    ORDER BY total_poured DESC
+  `;
+
+  db.all(queryVol, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const formatted = rows.map(r => ({ name: r.beer_name || r.tap_id, totalPoured: r.total_poured }));
     res.json(formatted);
   });
 });

@@ -54,5 +54,17 @@ export const apiService = {
         console.warn("API unavailable for history");
         return [];
     }
+  },
+
+  // Fetch per-brand volume for a timeframe
+  async getVolumeByBrand(period: string): Promise<{name: string, totalPoured: number}[]> {
+    try {
+      const res = await fetch(`${API_URL}/volume?period=${period}`);
+      if (!res.ok) throw new Error('Failed to fetch volume by brand');
+      return await res.json();
+    } catch (error) {
+      console.warn('API unavailable for volume by brand', error);
+      return [];
+    }
   }
 };
