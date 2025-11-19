@@ -50,7 +50,7 @@ Run broker: `mosquitto -c mosquitto.conf`
 ```bash
 node server.js
 ```
-*   Starts API on `http://localhost:3001`
+*   Starts API on `http://localhost:3002`
 *   Creates/Connects to `smarttap.db` (SQLite)
 *   Connects to MQTT (TCP 1883) to log events
 

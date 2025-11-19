@@ -9,7 +9,7 @@ RUN npm ci --omit=dev
 # Copy project files
 COPY . .
 
-EXPOSE 3001
+EXPOSE 3002
 
 # Run the backend server
 CMD ["node", "server.cjs"]

@@ -2,7 +2,7 @@
 import { Tap } from '../types';
 
 // Use 127.0.0.1 to avoid Node 17+ localhost IPv6 resolution issues
-const API_URL = 'http://127.0.0.1:3001/api';
+const API_URL = 'http://127.0.0.1:3002/api';
 
 export const apiService = {
   // Fetch configured taps from DB

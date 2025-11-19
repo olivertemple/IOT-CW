@@ -19,7 +19,7 @@ services:
       dockerfile: Dockerfile.backend
     container_name: smarttap_backend
     ports:
-      - "3001:3001"
+      - "3002:3002"
     depends_on:
       - mqtt
     environment:
@@ -37,7 +37,7 @@ services:
     depends_on:
       - backend
     environment:
-      - VITE_API_URL=http://localhost:3001
+      - VITE_API_URL=http://localhost:3002
     restart: unless-stopped
 
 volumes:
