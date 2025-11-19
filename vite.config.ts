@@ -8,6 +8,14 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        // Allow the specific host required by your reverse proxy plus common local names.
+        // Vite accepts an array of hostnames here.
+        allowedHosts: [
+          'beer.olivertemple.dev',
+          'localhost',
+          '127.0.0.1',
+          '::1'
+        ]
       },
       plugins: [react()],
       define: {

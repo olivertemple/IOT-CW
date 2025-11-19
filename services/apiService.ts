@@ -1,8 +1,10 @@
 
 import { Tap } from '../types';
 
-// Use 127.0.0.1 to avoid Node 17+ localhost IPv6 resolution issues
-const API_URL = 'http://127.0.0.1:3002/api';
+// Use a relative path so the frontend can be hosted behind a reverse proxy
+// (nginx will forward `/api` to the backend). This keeps the app same-origin
+// and works with both HTTP and HTTPS (nginx should handle TLS).
+const API_URL = '/api';
 
 export const apiService = {
   // Fetch configured taps from DB

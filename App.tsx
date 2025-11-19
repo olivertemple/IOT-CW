@@ -22,7 +22,18 @@ const App: React.FC = () => {
   // MQTT Settings
   // Default to Live MQTT on startup
   const [useRealMqtt, setUseRealMqtt] = useState(true);
-  const [brokerUrl, setBrokerUrl] = useState('ws://localhost:9001');
+  // Default broker URL: use same-origin path `/mqtt` so nginx can proxy websocket
+  // If the page is served over HTTPS, use `wss`, otherwise `ws`.
+  const [brokerUrl, setBrokerUrl] = useState(() => {
+    try {
+      const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      const proto = isSecure ? 'wss' : 'ws';
+      const host = typeof window !== 'undefined' ? window.location.host : 'localhost:9001';
+      return `${proto}://${host}/mqtt`;
+    } catch (e) {
+      return 'ws://localhost:9001';
+    }
+  });
 
   // 1. Initial Load from Backend DB
   useEffect(() => {

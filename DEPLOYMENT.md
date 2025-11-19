@@ -155,3 +155,15 @@ If a device publishes a full/legacy update to `taps/{tap_id}/update` or the serv
 Backward compatibility:
 - Existing devices that continue to publish the older keys (`weight`, `temp`, `sparesRemaining`, etc.) will continue to work — the service normalizes common names.
 - New optional fields to prefer: `kegIndex` (or `activeKegIndex`) and `spareKegs` to enable per-keg tracking.
+
+## 5. MQTT Client Simulation
+
+Run this to publish content to a topic
+```
+mosquitto_pub -h beer.olivertemple.dev -p 1883 -t 'taps/tap-004/keg' -m '{"weight": 53.5,"temp": 3.8, "cellarTemp": 20.2}'
+```
+
+Run this to subscribe to all topic
+```
+mosquitto_sub -h beer.olivertemple.dev -p 1883 -t 'taps/#' -v
+```
