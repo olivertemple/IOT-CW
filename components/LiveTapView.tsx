@@ -2,6 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Thermometer, Droplets, AlertTriangle, Zap } from 'lucide-react';
+import { UI_CONSTANTS } from '../constants';
 
 interface Props {
   tapState: any;
@@ -27,7 +28,7 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState }) => {
           <div className="relative w-48 h-96 border-4 border-[#2a3350] rounded-b-[3rem] bg-[#0a0e1a]/80 backdrop-blur-sm overflow-hidden shadow-2xl">
               {/* Liquid */}
               <motion.div 
-                  className={`absolute bottom-0 left-0 w-full ${pct < 20 ? 'bg-gradient-to-t from-red-500 to-orange-500' : 'bg-gradient-to-t from-amber-600 to-amber-400'}`}
+                  className={`absolute bottom-0 left-0 w-full ${pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT ? 'bg-gradient-to-t from-red-500 to-orange-500' : 'bg-gradient-to-t from-amber-600 to-amber-400'}`}
                   initial={{ height: '0%' }}
                   animate={{ height: `${pct}%` }}
                   transition={{ type: 'spring', stiffness: 60, damping: 25 }}
@@ -61,7 +62,7 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState }) => {
           <div className="mt-8 text-center">
               <h2 className="text-3xl font-black text-white mb-2">{tapState?.beer_name || 'No Keg Connected'}</h2>
               <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-[#1a1f35] rounded-full border border-[#2a3350]">
-                  <div className={`w-3 h-3 rounded-full ${pct < 20 ? 'bg-red-500 glow-danger' : 'bg-amber-500 glow-warning'}`}></div>
+                  <div className={`w-3 h-3 rounded-full ${pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT ? 'bg-red-500 glow-danger' : 'bg-amber-500 glow-warning'}`}></div>
                   <span className="font-mono font-bold text-2xl text-white">{pct}%</span>
                   <span className="text-slate-400 text-sm">Remaining</span>
               </div>
@@ -138,13 +139,13 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState }) => {
             <div className="progress-bar h-3">
                 <motion.div 
                     className="progress-fill bg-gradient-to-r from-green-500 to-green-400"
-                    animate={{ width: `${Math.min((flow / 5) * 100, 100)}%` }}
+                    animate={{ width: `${Math.min((flow / UI_CONSTANTS.MAX_FLOW_RATE_LPM) * 100, 100)}%` }}
                     transition={{ type: 'spring', stiffness: 50 }}
                 />
             </div>
             <div className="flex justify-between text-xs text-slate-500 mt-2">
                 <span>0 LPM</span>
-                <span>Max: 5 LPM</span>
+                <span>Max: {UI_CONSTANTS.MAX_FLOW_RATE_LPM} LPM</span>
             </div>
         </div>
 
@@ -155,17 +156,17 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState }) => {
                     <Thermometer size={22} />
                     <span className="text-sm font-bold uppercase tracking-wide">Beer Temperature</span>
                 </div>
-                <div className={`px-4 py-2 rounded-full text-xs font-bold ${temp > 6 ? 'bg-red-500/20 text-red-400 glow-danger' : 'bg-green-500/20 text-green-400'}`}>
-                    {temp > 6 ? 'WARNING' : 'OPTIMAL'}
+                <div className={`px-4 py-2 rounded-full text-xs font-bold ${temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'bg-red-500/20 text-red-400 glow-danger' : 'bg-green-500/20 text-green-400'}`}>
+                    {temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'WARNING' : 'OPTIMAL'}
                 </div>
             </div>
             <div className="flex items-end gap-3 mb-4">
-                <span className={`display-number ${temp > 6 ? 'text-red-400' : 'text-white'}`}>{temp.toFixed(1)}</span>
+                <span className={`display-number ${temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'text-red-400' : 'text-white'}`}>{temp.toFixed(1)}</span>
                 <span className="text-3xl text-slate-500 mb-3 font-bold">°C</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Optimal Range: 3-5°C</span>
-                {temp > 6 && <span className="text-red-400 font-bold flex items-center gap-2"><AlertTriangle size={16} /> Too Warm</span>}
+                <span className="text-slate-400">Optimal Range: {UI_CONSTANTS.OPTIMAL_TEMP_MIN}-{UI_CONSTANTS.OPTIMAL_TEMP_MAX}°C</span>
+                {temp > UI_CONSTANTS.HIGH_TEMP_WARNING && <span className="text-red-400 font-bold flex items-center gap-2"><AlertTriangle size={16} /> Too Warm</span>}
             </div>
         </div>
       </div>
