@@ -1,0 +1,33 @@
+{
+  "name": "smarttap-iot-docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start:server": "node ./server.cjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.11.0",
+    "express": "^5.1.0",
+    "framer-motion": "^12.23.24",
+    "lucide-react": "^0.554.0",
+    "mqtt": "^5.14.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^3.4.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
