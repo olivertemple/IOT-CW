@@ -1,14 +1,16 @@
 
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, Beer, BarChart3, Settings, Bell, Menu, Save, CheckCircle, WifiOff } from 'lucide-react';
+import { Beer, BarChart3, Package, Settings, Bell, X, Menu, Activity, AlertTriangle, Droplets, TrendingUp } from 'lucide-react';
 import { initSocket, disconnectSocket } from './services/socket';
 import LiveTapView from './components/LiveTapView';
 import InventoryManager from './components/InventoryManager';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
-import { BACKEND_URL } from './constants';
+import { BACKEND_URL, UI_CONSTANTS } from './constants';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('live');
+  const [activeView, setActiveView] = useState<'dashboard' | 'inventory' | 'analytics'>('dashboard');
+  const [showSettings, setShowSettings] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   
   // Application State
@@ -34,7 +36,6 @@ const App: React.FC = () => {
     socket.on('disconnect', () => setIsConnected(false));
     socket.on('connect_error', () => {
         setIsConnected(false);
-        // Only show backend error on dashboard if socket completely fails
     });
 
     socket.on('tap_update', (data) => setTapState(data));
@@ -45,7 +46,7 @@ const App: React.FC = () => {
     
     socket.on('alert', (data) => {
         setAlert(data.msg);
-        setTimeout(() => setAlert(null), 5000);
+        setTimeout(() => setAlert(null), UI_CONSTANTS.ALERT_DURATION_MS);
     });
 
     return () => {
@@ -56,9 +57,9 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Load Config when tab is active
+  // Load Config when settings modal opens
   useEffect(() => {
-      if (activeTab === 'config') {
+      if (showSettings) {
           setBackendError(false);
           fetch(`${BACKEND_URL}/api/config`)
             .then(res => {
@@ -71,7 +72,7 @@ const App: React.FC = () => {
                 setBackendError(true);
             });
       }
-  }, [activeTab]);
+  }, [showSettings]);
 
   const handleSaveConfig = () => {
       setSavingConfig(true);
@@ -86,7 +87,8 @@ const App: React.FC = () => {
       })
       .then(() => {
           setSavingConfig(false);
-          setAlert("Configuration Saved! Backend Reconnecting...");
+          setAlert("Configuration Saved!");
+          setShowSettings(false);
           setTimeout(() => setAlert(null), 3000);
       })
       .catch(() => {
@@ -96,156 +98,310 @@ const App: React.FC = () => {
       });
   };
 
+  const pct = tapState?.volume_remaining_pct || 0;
+  const temp = kegState?.temp || 4.0;
+  const flow = kegState?.flow || 0;
+  const isPouring = tapState?.view === 'POURING';
+
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-white font-sans flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
       
-      {/* Sidebar */}
-      <aside className="w-20 lg:w-72 bg-gradient-to-b from-[#151928] to-[#0f1420] border-r border-[#2a3350] flex flex-col sticky top-0 h-screen shrink-0 transition-all shadow-2xl">
-        <div className="h-24 flex items-center justify-center lg:justify-start lg:px-6 border-b border-[#2a3350] bg-[#1a1f35]/50">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
-                <Beer className="text-white" size={28} />
-            </div>
-            <span className="ml-4 font-black text-2xl tracking-tight hidden lg:block text-white">SmartBar</span>
-        </div>
-
-        <nav className="flex-1 p-4 space-y-3">
-            <SidebarItem icon={<LayoutDashboard size={22} />} label="Live Monitor" active={activeTab === 'live'} onClick={() => setActiveTab('live')} />
-            <SidebarItem icon={<Beer size={22} />} label="Inventory" active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} />
-            <SidebarItem icon={<BarChart3 size={22} />} label="Analytics" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
-            <div className="pt-6">
-                 <SidebarItem icon={<Settings size={22} />} label="Settings" active={activeTab === 'config'} onClick={() => setActiveTab('config')} />
-            </div>
-        </nav>
-
-        <div className="p-5 border-t border-[#2a3350] hidden lg:block bg-[#0a0e1a]/30">
-            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#1a1f35]/50">
+      {/* Top Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            
+            {/* Logo */}
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setShowMenu(!showMenu)}
+                className="lg:hidden p-2 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <Menu size={24} />
+              </button>
+              <div className="flex items-center gap-3">
                 <div className="relative">
-                    <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    {isConnected && <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></div>}
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 blur-lg opacity-50"></div>
+                  <div className="relative bg-gradient-to-br from-amber-500 to-orange-600 p-3 rounded-2xl shadow-2xl">
+                    <Beer size={28} className="text-white" />
+                  </div>
                 </div>
-                <div className="text-xs font-semibold text-slate-400">
-                    {isConnected ? 'System Online' : 'Disconnected'}
+                <div>
+                  <h1 className="text-2xl font-black tracking-tight">SmartBar</h1>
+                  <p className="text-xs text-slate-400 font-semibold">Tap System OS</p>
                 </div>
+              </div>
             </div>
+
+            {/* Navigation Tabs */}
+            <div className="hidden lg:flex items-center gap-2">
+              <NavButton 
+                icon={<Activity size={20} />} 
+                label="Live Dashboard" 
+                active={activeView === 'dashboard'}
+                onClick={() => setActiveView('dashboard')}
+              />
+              <NavButton 
+                icon={<Package size={20} />} 
+                label="Stock" 
+                active={activeView === 'inventory'}
+                onClick={() => setActiveView('inventory')}
+              />
+              <NavButton 
+                icon={<BarChart3 size={20} />} 
+                label="Analytics" 
+                active={activeView === 'analytics'}
+                onClick={() => setActiveView('analytics')}
+              />
+            </div>
+
+            {/* Right Actions */}
+            <div className="flex items-center gap-4">
+              {/* Connection Status */}
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/50 border border-slate-800">
+                <div className="relative">
+                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                  {isConnected && (
+                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+                  )}
+                </div>
+                <span className="text-xs font-bold text-slate-400">
+                  {isConnected ? 'ONLINE' : 'OFFLINE'}
+                </span>
+              </div>
+
+              {/* Settings Button */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-3 rounded-xl bg-slate-900/50 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 transition-all"
+              >
+                <Settings size={20} />
+              </button>
+            </div>
+          </div>
         </div>
-      </aside>
+
+        {/* Mobile Menu */}
+        {showMenu && (
+          <div className="lg:hidden border-t border-slate-800 bg-slate-950/95 backdrop-blur-xl">
+            <div className="px-4 py-3 space-y-2">
+              <MobileNavButton 
+                icon={<Activity size={20} />} 
+                label="Live Dashboard" 
+                active={activeView === 'dashboard'}
+                onClick={() => { setActiveView('dashboard'); setShowMenu(false); }}
+              />
+              <MobileNavButton 
+                icon={<Package size={20} />} 
+                label="Stock Management" 
+                active={activeView === 'inventory'}
+                onClick={() => { setActiveView('inventory'); setShowMenu(false); }}
+              />
+              <MobileNavButton 
+                icon={<BarChart3 size={20} />} 
+                label="Analytics" 
+                active={activeView === 'analytics'}
+                onClick={() => { setActiveView('analytics'); setShowMenu(false); }}
+              />
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Alert Banner */}
+      {alert && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-slideDown">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-blue-400/30">
+            <Bell size={20} className="animate-bounce" />
+            <span className="font-bold text-lg">{alert}</span>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#0a0e1a]">
-        {/* Header */}
-        <header className="h-24 border-b border-[#2a3350] bg-[#151928]/80 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-20 shadow-lg">
-            <div>
-                <h1 className="text-3xl font-black text-white capitalize tracking-tight">{activeTab === 'config' ? 'Settings' : activeTab}</h1>
-                <p className="text-sm text-slate-400 mt-0.5">Main Bar • Line A</p>
-            </div>
-            
-            <div className="flex items-center gap-6">
-                {/* Alert Banner */}
-                {alert && (
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-full text-sm font-bold flex items-center gap-3 shadow-lg glow-accent alert-banner">
-                        <Bell size={18} /> {alert}
-                    </div>
-                )}
-                
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center border border-blue-400/20 shadow-lg">
-                        <span className="font-black text-lg text-white">TS</span>
-                    </div>
+      <main className="pt-24 pb-8 px-4 sm:px-6 lg:px-8 max-w-screen-2xl mx-auto">
+        
+        {activeView === 'dashboard' && (
+          <div className="space-y-6">
+            {/* Hero Status Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              
+              {/* Current Beer Card */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-600 to-orange-600 p-8 shadow-2xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative">
+                  <Beer className="mb-4 text-amber-100" size={32} />
+                  <h3 className="text-sm font-bold text-amber-100 uppercase tracking-wide mb-2">Now Serving</h3>
+                  <p className="text-3xl font-black text-white mb-1">{tapState?.beer_name || 'No Keg'}</p>
+                  <div className="flex items-center gap-2 text-amber-100">
+                    <div className={`w-3 h-3 rounded-full ${pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT ? 'bg-red-400 animate-pulse' : 'bg-emerald-400'}`}></div>
+                    <span className="font-bold text-lg">{pct}% Full</span>
+                  </div>
                 </div>
-            </div>
-        </header>
+              </div>
 
-        {/* Viewport */}
-        <div className="flex-1 p-8 overflow-y-auto bg-gradient-to-br from-[#0a0e1a] via-[#0f1420] to-[#0a0e1a]">
-            {activeTab === 'live' && (
-                <LiveTapView tapState={tapState} kegState={kegState} />
-            )}
-            {activeTab === 'inventory' && (
-                <InventoryManager inventory={inventory} orders={orders} />
-            )}
-            {activeTab === 'analytics' && (
-                <AnalyticsDashboard history={history} />
-            )}
-             {activeTab === 'config' && (
-                <div className="max-w-3xl mx-auto">
-                    <div className="bg-gradient-to-br from-[#1a1f35] to-[#151928] p-8 rounded-2xl border border-[#2a3350] shadow-2xl">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl text-white border border-blue-400/20 shadow-lg">
-                                <Settings size={32} />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-black text-white">System Configuration</h2>
-                                <p className="text-slate-400 text-sm mt-1">Manage backend connectivity and broker settings</p>
-                            </div>
-                        </div>
-
-                        {backendError && (
-                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5 mb-6 flex items-center gap-4 text-red-200">
-                                <div className="p-3 bg-red-500/20 rounded-xl">
-                                    <WifiOff size={24} className="text-red-400" />
-                                </div>
-                                <div>
-                                    <div className="font-bold text-lg">Backend Offline</div>
-                                    <div className="text-sm opacity-90 mt-1">Could not connect to local server at {BACKEND_URL}. Ensure server.js is running.</div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className={`space-y-6 ${backendError ? 'opacity-50 pointer-events-none' : ''}`}>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-3 uppercase tracking-wide">MQTT Broker URL</label>
-                                <div className="relative">
-                                    <input 
-                                        type="text" 
-                                        value={config.mqtt_broker}
-                                        onChange={(e) => setConfig({...config, mqtt_broker: e.target.value})}
-                                        className="w-full bg-[#0a0e1a] border-2 border-[#2a3350] rounded-xl px-5 py-4 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm shadow-inner transition-all"
-                                        placeholder="mqtt://hostname:port"
-                                    />
-                                    <div className="absolute right-4 top-4 text-xs font-bold">
-                                        {isConnected ? <span className="text-green-400">● CONNECTED</span> : <span className="text-slate-500">DISCONNECTED</span>}
-                                    </div>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-                                    Supports <span className="font-mono bg-[#1a1f35] px-2 py-0.5 rounded text-slate-300">mqtt://</span>, <span className="font-mono bg-[#1a1f35] px-2 py-0.5 rounded text-slate-300">tcp://</span>, and <span className="font-mono bg-[#1a1f35] px-2 py-0.5 rounded text-slate-300">ws://</span> protocols.
-                                </p>
-                            </div>
-
-                            <div className="pt-6 border-t border-[#2a3350] flex justify-end">
-                                <button 
-                                    onClick={handleSaveConfig}
-                                    disabled={savingConfig}
-                                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center gap-3 shadow-xl text-base"
-                                >
-                                    {savingConfig ? (
-                                        <>Saving...</>
-                                    ) : (
-                                        <><Save size={20} /> Save Configuration</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+              {/* Flow Status Card */}
+              <div className={`relative overflow-hidden rounded-3xl p-8 shadow-2xl transition-all ${
+                isPouring 
+                  ? 'bg-gradient-to-br from-emerald-600 to-green-600' 
+                  : 'bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700'
+              }`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative">
+                  <Droplets className={`mb-4 ${isPouring ? 'text-emerald-100 animate-pulse' : 'text-slate-500'}`} size={32} />
+                  <h3 className={`text-sm font-bold uppercase tracking-wide mb-2 ${isPouring ? 'text-emerald-100' : 'text-slate-400'}`}>Flow Rate</h3>
+                  <p className={`text-5xl font-black mb-1 ${isPouring ? 'text-white' : 'text-slate-400'}`}>{flow.toFixed(1)}</p>
+                  <span className={`font-bold ${isPouring ? 'text-emerald-100' : 'text-slate-500'}`}>
+                    LPM {isPouring && '• POURING'}
+                  </span>
                 </div>
-            )}
-        </div>
+              </div>
+
+              {/* Temperature Card */}
+              <div className={`relative overflow-hidden rounded-3xl p-8 shadow-2xl ${
+                temp > UI_CONSTANTS.HIGH_TEMP_WARNING
+                  ? 'bg-gradient-to-br from-red-600 to-rose-600'
+                  : 'bg-gradient-to-br from-blue-600 to-cyan-600'
+              }`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative">
+                  {temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? (
+                    <AlertTriangle className="mb-4 text-red-100 animate-bounce" size={32} />
+                  ) : (
+                    <Activity className="mb-4 text-blue-100" size={32} />
+                  )}
+                  <h3 className={`text-sm font-bold uppercase tracking-wide mb-2 ${
+                    temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'text-red-100' : 'text-blue-100'
+                  }`}>Temperature</h3>
+                  <p className="text-5xl font-black text-white mb-1">{temp.toFixed(1)}<span className="text-3xl">°C</span></p>
+                  <span className={`font-bold ${
+                    temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'text-red-100' : 'text-blue-100'
+                  }`}>
+                    {temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'TOO WARM' : 'OPTIMAL'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Keg ID Card */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600 to-indigo-600 p-8 shadow-2xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                <div className="relative">
+                  <Package className="mb-4 text-purple-100" size={32} />
+                  <h3 className="text-sm font-bold text-purple-100 uppercase tracking-wide mb-2">Active Keg</h3>
+                  <p className="text-4xl font-black text-white mb-1">{kegState?.id || '---'}</p>
+                  <span className="font-bold text-purple-100">Source ID</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Detailed Live View */}
+            <LiveTapView tapState={tapState} kegState={kegState} />
+          </div>
+        )}
+
+        {activeView === 'inventory' && <InventoryManager inventory={inventory} orders={orders} />}
+        {activeView === 'analytics' && <AnalyticsDashboard history={history} />}
+
       </main>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-3xl shadow-2xl max-w-2xl w-full border-2 border-slate-800 max-h-[90vh] overflow-y-auto">
+            <div className="p-8">
+              <div className="flex items-start justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl">
+                    <Settings size={32} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-black text-white">System Settings</h2>
+                    <p className="text-slate-400 mt-1">Configure backend connectivity</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="p-2 rounded-xl hover:bg-slate-800 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              {backendError && (
+                <div className="mb-6 p-6 bg-red-500/10 border-2 border-red-500/30 rounded-2xl flex items-start gap-4">
+                  <AlertTriangle className="text-red-400 flex-shrink-0 mt-1" size={24} />
+                  <div>
+                    <h3 className="font-bold text-red-400 text-lg mb-1">Backend Offline</h3>
+                    <p className="text-red-300 text-sm">Could not connect to {BACKEND_URL}. Ensure the server is running.</p>
+                  </div>
+                </div>
+              )}
+
+              <div className={`space-y-6 ${backendError ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div>
+                  <label className="block text-sm font-bold text-slate-300 mb-3 uppercase tracking-wide">MQTT Broker URL</label>
+                  <input 
+                    type="text" 
+                    value={config.mqtt_broker}
+                    onChange={(e) => setConfig({...config, mqtt_broker: e.target.value})}
+                    className="w-full bg-slate-950 border-2 border-slate-700 rounded-2xl px-6 py-4 text-white text-lg font-mono focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all"
+                    placeholder="mqtt://hostname:port"
+                  />
+                  <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                    Supports <code className="bg-slate-800 px-2 py-1 rounded">mqtt://</code>, <code className="bg-slate-800 px-2 py-1 rounded">tcp://</code>, and <code className="bg-slate-800 px-2 py-1 rounded">ws://</code> protocols.
+                  </p>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button
+                    onClick={() => setShowSettings(false)}
+                    className="flex-1 px-6 py-4 rounded-2xl font-bold border-2 border-slate-700 hover:bg-slate-800 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSaveConfig}
+                    disabled={savingConfig}
+                    className="flex-1 px-6 py-4 rounded-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-all disabled:opacity-50 shadow-xl text-lg"
+                  >
+                    {savingConfig ? 'Saving...' : 'Save Configuration'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-const SidebarItem = ({ icon, label, active, onClick }: any) => (
-    <button 
-        onClick={onClick}
-        className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 font-semibold text-sm ${
-            active 
-            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-xl shadow-blue-500/30' 
-            : 'text-slate-400 hover:bg-[#1a1f35] hover:text-white'
-        }`}
-    >
-        <div className="shrink-0">{icon}</div>
-        <span className="hidden lg:block">{label}</span>
-    </button>
+const NavButton = ({ icon, label, active, onClick }: any) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+      active
+        ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30'
+        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+    }`}
+  >
+    {icon}
+    <span>{label}</span>
+  </button>
+);
+
+const MobileNavButton = ({ icon, label, active, onClick }: any) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
+      active
+        ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white'
+        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+    }`}
+  >
+    {icon}
+    <span>{label}</span>
+  </button>
 );
 
 export default App;

@@ -216,6 +216,21 @@ body {
   }
 }
 
+.animate-slideDown {
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Large display numbers for pub environment */
 .display-number {
   font-size: 4rem;
