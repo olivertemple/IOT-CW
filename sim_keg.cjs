@@ -35,6 +35,19 @@ client.on('connect', () => {
     console.log(`${LOG}[SYSTEM] Connected to Broker${RESET}`);
     client.subscribe(TOPIC_CMD);
     console.log(`${LOG}[SYSTEM] Subscribed to ${TOPIC_CMD}${RESET}`);
+    // Publish initial status so controllers/UI have correct startup volumes
+    const initStatus = {
+        state: 'IDLE',
+        flow_lpm: 0,
+        temp_beer_c: 4.2,
+        temp_cellar_c: 12.0,
+        weight_raw_g: volumeMl + 200,
+        vol_remaining_ml: volumeMl,
+        pump_duty: 0
+    };
+    console.log(`${PUB}[PUB]  INITIAL STATUS: ${volumeMl}ml${RESET}`);
+    console.log(`DATA: ${JSON.stringify(initStatus)}`);
+    client.publish(TOPIC_STATUS, JSON.stringify(initStatus));
 });
 
 client.on('message', (topic, message) => {

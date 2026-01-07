@@ -13,7 +13,7 @@ let activeKegIndex = 0; // Start with keg-A
 let currentKegId = KEG_LIST[activeKegIndex];
 let isPouring = false;
 let currentBeerName = "Hazy IPA";
-let currentVolPct = 100; // Track volume state to prevent UI glitches
+let currentVolPct = null; // Unknown until telemetry arrives
 
 // ANSI Colors
 const PUB = '\x1b[32m';
@@ -152,8 +152,9 @@ function updateScreenFromTelemetry(telemetry) {
 }
 
 function sendUiUpdate(view, alert, pctOverride = null) {
-    // Use the override if provided (e.g. forcing 0% on empty), otherwise use state
-    const pct = pctOverride !== null ? pctOverride : currentVolPct;
+    // Use the override if provided (e.g. forcing 0% on empty), otherwise use current known state.
+    // If we haven't yet received telemetry, fall back to 0 to avoid briefly advertising 100%.
+    const pct = pctOverride !== null ? pctOverride : (currentVolPct !== null ? currentVolPct : 0);
     
     const payload = {
         view: view,
