@@ -40,23 +40,23 @@ const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
   const totalMl = buckets.reduce((s, b) => s + (b.volume_ml || 0), 0);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
        {/* Volume Chart */}
-       <div className="xl:col-span-2 bg-gradient-to-br from-[#1a1f35] to-[#151928] p-8 rounded-2xl border border-[#2a3350] shadow-2xl">
+       <div className="xl:col-span-2 bg-white border border-gray-200 rounded-2xl p-8">
           <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
-                      <Activity className="text-white" size={24} />
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                      <Activity className="text-indigo-600" size={20} />
                   </div>
                   <div>
-                      <h3 className="text-2xl font-black text-white">Pour Volume</h3>
-                      <p className="text-sm text-slate-400 mt-0.5">Last 7 days activity</p>
+                      <h3 className="text-xl font-bold text-gray-900">Pour Volume</h3>
+                      <p className="text-sm text-gray-600 mt-0.5">Last 7 days activity</p>
                   </div>
               </div>
               <select 
                   value={beer} 
                   onChange={e => setBeer(e.target.value)} 
-                  className="bg-[#0a0e1a] border-2 border-[#2a3350] text-white px-4 py-2.5 rounded-xl font-semibold text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  className="bg-white border-2 border-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                   <option>Hazy IPA</option>
                   <option>Stout</option>
@@ -66,66 +66,60 @@ const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
           
           <div className="mb-6 flex items-center justify-between">
               <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-slate-400">Total Volume:</span>
-                  <span className="text-3xl font-black text-white">{totalMl}</span>
-                  <span className="text-slate-500 text-lg font-semibold">ml</span>
+                  <span className="text-sm text-gray-600 font-medium">Total Volume:</span>
+                  <span className="text-3xl font-bold text-gray-900">{totalMl}</span>
+                  <span className="text-gray-500 text-base font-medium">ml</span>
               </div>
               <button 
                   onClick={() => setShowRaw(s => !s)} 
-                  className="text-xs text-slate-400 hover:text-slate-300 underline transition-colors"
+                  className="text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
               >
                   {showRaw ? 'Hide' : 'Show'} raw data
               </button>
           </div>
           
           {showRaw && (
-            <pre className="text-xs bg-[#0a0e1a] p-4 rounded-xl text-slate-300 overflow-auto max-h-40 mb-6 border border-[#2a3350] font-mono">{JSON.stringify(buckets, null, 2)}</pre>
+            <pre className="text-xs bg-gray-50 p-4 rounded-xl text-gray-700 overflow-auto max-h-40 mb-6 border border-gray-200 font-mono">{JSON.stringify(buckets, null, 2)}</pre>
           )}
           
           {totalMl === 0 && buckets.length > 0 ? (
             <div className="py-16 text-center">
-                <Activity className="mx-auto mb-4 text-slate-700" size={64} />
-                <div className="text-slate-600 font-semibold">No usage in the selected range</div>
+                <Activity className="mx-auto mb-4 text-gray-300" size={64} />
+                <div className="text-gray-600 font-medium">No usage in the selected range</div>
             </div>
           ) : (
-          <div className="h-80 bg-[#0a0e1a]/50 rounded-xl p-4">
+          <div className="h-80 bg-gray-50 rounded-xl p-4 border border-gray-200">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#2a3350" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis 
                             dataKey="bucket_ts" 
-                            stroke="#64748b" 
+                            stroke="#9ca3af" 
                             fontSize={11} 
                             interval={tickInterval} 
-                            tick={{ fill: '#94a3b8' }} 
+                            tick={{ fill: '#6b7280' }} 
                             angle={-45} 
                             textAnchor="end" 
                             height={60} 
                             tickFormatter={(ts) => new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit' })} 
                         />
-                        <YAxis stroke="#64748b" fontSize={12} tick={{ fill: '#94a3b8' }} />
+                        <YAxis stroke="#9ca3af" fontSize={12} tick={{ fill: '#6b7280' }} />
                         <Tooltip 
                             contentStyle={{ 
-                                backgroundColor: '#1a1f35', 
-                                borderColor: '#2a3350', 
-                                color: '#fff',
+                                backgroundColor: '#ffffff', 
+                                borderColor: '#e5e7eb', 
+                                color: '#111827',
                                 borderRadius: '12px',
-                                border: '2px solid #2a3350',
+                                border: '2px solid #e5e7eb',
                                 padding: '12px',
-                                fontWeight: 'bold'
+                                fontWeight: '600'
                             }}
-                            cursor={{ fill: '#2a3350', opacity: 0.5 }}
+                            cursor={{ fill: '#f3f4f6', opacity: 0.5 }}
                             labelFormatter={(label) => {
                               try { return new Date(Number(label)).toLocaleString(); } catch { return String(label); }
                             }}
                         />
-                    <Bar dataKey="volume" fill="url(#blueGradient)" radius={[8, 8, 0, 0]} />
-                    <defs>
-                        <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#3b82f6" />
-                            <stop offset="100%" stopColor="#2563eb" />
-                        </linearGradient>
-                    </defs>
+                    <Bar dataKey="volume" fill="#4f46e5" radius={[8, 8, 0, 0]} />
                 </BarChart>
             </ResponsiveContainer>
           </div>
@@ -133,20 +127,20 @@ const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
        </div>
 
        {/* Efficiency Metric */}
-       <div className="bg-gradient-to-br from-[#1a1f35] to-[#151928] p-8 rounded-2xl border border-[#2a3350] shadow-2xl flex flex-col justify-center items-center text-center">
-          <div className="p-4 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl mb-6 glow-success">
-              <TrendingUp className="text-white" size={48} />
+       <div className="bg-white border border-gray-200 rounded-2xl p-8 flex flex-col justify-center items-center text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
+              <TrendingUp className="text-green-600" size={32} />
           </div>
-          <h3 className="text-lg font-bold text-slate-400 mb-4 uppercase tracking-wide">System Efficiency</h3>
-          <div className="display-number text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-500 mb-4">98.5%</div>
-          <p className="text-slate-500 text-sm max-w-xs leading-relaxed">
+          <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">System Efficiency</h3>
+          <div className="text-7xl font-bold text-gray-900 mb-4">98.5<span className="text-4xl text-gray-400">%</span></div>
+          <p className="text-gray-600 text-sm max-w-xs leading-relaxed">
             Calculated based on flow-meter vs load-cell discrepancies over the last 24 hours.
           </p>
           <div className="mt-6 w-full max-w-xs">
-              <div className="progress-bar h-3">
-                  <div className="progress-fill bg-gradient-to-r from-green-500 to-green-400" style={{ width: '98.5%' }}></div>
+              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-green-500 rounded-full" style={{ width: '98.5%' }}></div>
               </div>
-              <div className="flex justify-between text-xs text-slate-600 mt-2">
+              <div className="flex justify-between text-xs text-gray-500 mt-2">
                   <span>0%</span>
                   <span>100%</span>
               </div>
