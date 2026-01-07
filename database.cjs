@@ -59,6 +59,24 @@ function initDb() {
       beer_name TEXT,
       status TEXT -- PENDING, ORDERED, DELIVERED
     )`);
+
+    // Telemetry snapshots (one row per status message)
+    db.run(`CREATE TABLE IF NOT EXISTS telemetry (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp INTEGER,
+      keg_id TEXT,
+      vol_remaining_ml INTEGER,
+      flow_lpm REAL,
+      temp_beer_c REAL
+    )`);
+
+    // Hourly aggregated usage per beer (compact time-series for charts)
+    db.run(`CREATE TABLE IF NOT EXISTS usage_hourly (
+      bucket_ts INTEGER,
+      beer_name TEXT,
+      volume_ml INTEGER,
+      PRIMARY KEY (bucket_ts, beer_name)
+    )`);
   });
 }
 
@@ -113,4 +131,31 @@ module.exports = {
   getOrders: (callback) => {
       db.all(`SELECT * FROM orders ORDER BY timestamp DESC`, [], (err, rows) => callback(rows || []));
   }
+};
+
+// Telemetry helpers
+module.exports.logTelemetry = (kegId, volRemaining, flowLpm, tempBeerC, ts = Date.now()) => {
+  db.run(
+    `INSERT INTO telemetry (timestamp, keg_id, vol_remaining_ml, flow_lpm, temp_beer_c) VALUES (?, ?, ?, ?, ?)`,
+    [ts, kegId, volRemaining, flowLpm, tempBeerC],
+    (err) => { if (err) console.error('[DB] logTelemetry error:', err.message); }
+  );
+};
+
+module.exports.addUsageHour = (bucketTs, beerName, volumeMl) => {
+  if (!volumeMl || volumeMl <= 0) return;
+  db.run(
+    `INSERT INTO usage_hourly (bucket_ts, beer_name, volume_ml) VALUES (?, ?, ?)
+     ON CONFLICT(bucket_ts, beer_name) DO UPDATE SET volume_ml = volume_ml + excluded.volume_ml`,
+    [bucketTs, beerName, volumeMl],
+    (err) => { if (err) console.error('[DB] addUsageHour error:', err.message); }
+  );
+};
+
+module.exports.getUsageRange = (beerName, startTs, endTs, callback) => {
+  db.all(
+    `SELECT bucket_ts, volume_ml FROM usage_hourly WHERE beer_name = ? AND bucket_ts BETWEEN ? AND ? ORDER BY bucket_ts`,
+    [beerName, startTs, endTs],
+    (err, rows) => callback(rows || [])
+  );
 };

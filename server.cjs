@@ -21,6 +21,9 @@ const io = new Server(server, {
 const SYSTEM_ID = 'tap-01';
 let mqttClient = null;
 
+// Keep last-known telemetry per keg for delta calculations
+const lastTelemetry = {}; // kegId -> { vol_remaining_ml, ts }
+
 // In-memory state for real-time broadcasting
 const liveState = {
     tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null },
@@ -60,6 +63,20 @@ function connectMqtt(brokerUrl) {
             
             // Persist to DB
             db.updateKeg(kegId, "Hazy IPA", 20000, payload.vol_remaining_ml, payload.state);
+
+            // Log telemetry snapshot for time-series analysis
+            try {
+              db.logTelemetry(kegId, payload.vol_remaining_ml, payload.flow_lpm, payload.temp_beer_c, Date.now());
+            } catch (e) { console.error('[SERVER] logTelemetry error', e); }
+
+            // Compute volume delta (only when volume decreased) and roll up into hourly bucket
+            const last = lastTelemetry[kegId];
+            if (last && typeof last.vol_remaining_ml === 'number' && payload.vol_remaining_ml < last.vol_remaining_ml) {
+              const delta = Math.max(0, last.vol_remaining_ml - payload.vol_remaining_ml);
+              const bucket = Math.floor(Date.now() / 3600000) * 3600000; // hour start in ms
+              db.addUsageHour(bucket, "Hazy IPA", delta);
+            }
+            lastTelemetry[kegId] = { vol_remaining_ml: payload.vol_remaining_ml, ts: Date.now() };
 
             // Update Live State if it's the active pumping keg
             if (payload.state === 'PUMPING') {
@@ -113,6 +130,30 @@ app.get('/api/config', (req, res) => {
     db.getSetting('mqtt_broker', (url) => {
         res.json({ mqtt_broker: url || 'mqtt://test.mosquitto.org' });
     });
+});
+
+// Usage time-series endpoint (hourly aggregated)
+// Query params: ?beer=Hazy%20IPA&from=1610000000000&to=1610003600000
+app.get('/api/usage', (req, res) => {
+  const beer = req.query.beer || 'Hazy IPA';
+  const to = parseInt(req.query.to, 10) || Date.now();
+  const from = parseInt(req.query.from, 10) || (Date.now() - 24 * 3600000);
+
+  db.getUsageRange(beer, from, to, (rows) => {
+    // Normalize response to include zeros for empty buckets
+    // Build a map of bucket_ts -> volume
+    const map = new Map();
+    rows.forEach(r => map.set(r.bucket_ts, r.volume_ml));
+
+    // compute hourly buckets from from -> to (align to hour)
+    const startBucket = Math.floor(from / 3600000) * 3600000;
+    const endBucket = Math.floor(to / 3600000) * 3600000;
+    const out = [];
+    for (let b = startBucket; b <= endBucket; b += 3600000) {
+      out.push({ bucket_ts: b, volume_ml: map.get(b) || 0 });
+    }
+    res.json({ beer: beer, buckets: out });
+  });
 });
 
 app.post('/api/config', (req, res) => {
