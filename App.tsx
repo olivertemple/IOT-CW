@@ -97,30 +97,33 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans flex">
+    <div className="min-h-screen bg-[#0a0e1a] text-white font-sans flex">
       
       {/* Sidebar */}
-      <aside className="w-20 lg:w-64 bg-slate-900 border-r border-slate-800 flex flex-col sticky top-0 h-screen shrink-0 transition-all">
-        <div className="h-20 flex items-center justify-center lg:justify-start lg:px-6 border-b border-slate-800">
-            <div className="bg-blue-600 p-2 rounded-lg">
-                <Beer className="text-white" size={24} />
+      <aside className="w-20 lg:w-72 bg-gradient-to-b from-[#151928] to-[#0f1420] border-r border-[#2a3350] flex flex-col sticky top-0 h-screen shrink-0 transition-all shadow-2xl">
+        <div className="h-24 flex items-center justify-center lg:justify-start lg:px-6 border-b border-[#2a3350] bg-[#1a1f35]/50">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg">
+                <Beer className="text-white" size={28} />
             </div>
-            <span className="ml-3 font-bold text-xl tracking-tight hidden lg:block text-white">SmartBar</span>
+            <span className="ml-4 font-black text-2xl tracking-tight hidden lg:block text-white">SmartBar</span>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
-            <SidebarItem icon={<LayoutDashboard />} label="Live Monitor" active={activeTab === 'live'} onClick={() => setActiveTab('live')} />
-            <SidebarItem icon={<Beer />} label="Inventory & Stock" active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} />
-            <SidebarItem icon={<BarChart3 />} label="Analytics" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
-            <div className="pt-8">
-                 <SidebarItem icon={<Settings />} label="Configuration" active={activeTab === 'config'} onClick={() => setActiveTab('config')} />
+        <nav className="flex-1 p-4 space-y-3">
+            <SidebarItem icon={<LayoutDashboard size={22} />} label="Live Monitor" active={activeTab === 'live'} onClick={() => setActiveTab('live')} />
+            <SidebarItem icon={<Beer size={22} />} label="Inventory" active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} />
+            <SidebarItem icon={<BarChart3 size={22} />} label="Analytics" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
+            <div className="pt-6">
+                 <SidebarItem icon={<Settings size={22} />} label="Settings" active={activeTab === 'config'} onClick={() => setActiveTab('config')} />
             </div>
         </nav>
 
-        <div className="p-4 border-t border-slate-800 hidden lg:block">
-            <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
-                <div className="text-xs text-slate-500">
+        <div className="p-5 border-t border-[#2a3350] hidden lg:block bg-[#0a0e1a]/30">
+            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#1a1f35]/50">
+                <div className="relative">
+                    <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    {isConnected && <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></div>}
+                </div>
+                <div className="text-xs font-semibold text-slate-400">
                     {isConnected ? 'System Online' : 'Disconnected'}
                 </div>
             </div>
@@ -128,31 +131,32 @@ const App: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#0a0e1a]">
         {/* Header */}
-        <header className="h-20 border-b border-slate-800 bg-slate-950/50 backdrop-blur flex items-center justify-between px-8 sticky top-0 z-10">
-            <h1 className="text-2xl font-bold text-white capitalize">{activeTab.replace('-', ' ')}</h1>
+        <header className="h-24 border-b border-[#2a3350] bg-[#151928]/80 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-20 shadow-lg">
+            <div>
+                <h1 className="text-3xl font-black text-white capitalize tracking-tight">{activeTab === 'config' ? 'Settings' : activeTab}</h1>
+                <p className="text-sm text-slate-400 mt-0.5">Main Bar • Line A</p>
+            </div>
             
             <div className="flex items-center gap-6">
                 {/* Alert Banner */}
                 {alert && (
-                    <div className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold animate-pulse flex items-center gap-2 shadow-lg">
-                        <Bell size={16} /> {alert}
+                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-full text-sm font-bold flex items-center gap-3 shadow-lg glow-accent alert-banner">
+                        <Bell size={18} /> {alert}
                     </div>
                 )}
                 
-                <div className="text-right hidden sm:block">
-                    <div className="text-sm font-bold text-white">Tap System 01</div>
-                    <div className="text-xs text-slate-500">Main Bar • Line A</div>
-                </div>
-                <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700">
-                    <span className="font-bold text-blue-400">TS</span>
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center border border-blue-400/20 shadow-lg">
+                        <span className="font-black text-lg text-white">TS</span>
+                    </div>
                 </div>
             </div>
         </header>
 
         {/* Viewport */}
-        <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex-1 p-8 overflow-y-auto bg-gradient-to-br from-[#0a0e1a] via-[#0f1420] to-[#0a0e1a]">
             {activeTab === 'live' && (
                 <LiveTapView tapState={tapState} kegState={kegState} />
             )}
@@ -163,60 +167,60 @@ const App: React.FC = () => {
                 <AnalyticsDashboard history={history} />
             )}
              {activeTab === 'config' && (
-                <div className="max-w-2xl mx-auto">
-                    <div className="bg-slate-900 p-8 rounded-xl border border-slate-800 shadow-xl">
+                <div className="max-w-3xl mx-auto">
+                    <div className="bg-gradient-to-br from-[#1a1f35] to-[#151928] p-8 rounded-2xl border border-[#2a3350] shadow-2xl">
                         <div className="flex items-center gap-4 mb-8">
-                            <div className="p-3 bg-slate-800 rounded-lg text-blue-400 border border-slate-700">
+                            <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl text-white border border-blue-400/20 shadow-lg">
                                 <Settings size={32} />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-white">System Configuration</h2>
-                                <p className="text-slate-400 text-sm">Manage backend connectivity and broker settings.</p>
+                                <h2 className="text-2xl font-black text-white">System Configuration</h2>
+                                <p className="text-slate-400 text-sm mt-1">Manage backend connectivity and broker settings</p>
                             </div>
                         </div>
 
                         {backendError && (
-                            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 mb-6 flex items-center gap-4 text-red-200">
-                                <div className="p-2 bg-red-500/20 rounded-full">
-                                    <WifiOff size={20} className="text-red-500" />
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5 mb-6 flex items-center gap-4 text-red-200">
+                                <div className="p-3 bg-red-500/20 rounded-xl">
+                                    <WifiOff size={24} className="text-red-400" />
                                 </div>
                                 <div>
-                                    <div className="font-bold">Backend Offline</div>
-                                    <div className="text-xs opacity-75">Could not connect to local server at {BACKEND_URL}. Ensure server.js is running.</div>
+                                    <div className="font-bold text-lg">Backend Offline</div>
+                                    <div className="text-sm opacity-90 mt-1">Could not connect to local server at {BACKEND_URL}. Ensure server.js is running.</div>
                                 </div>
                             </div>
                         )}
 
                         <div className={`space-y-6 ${backendError ? 'opacity-50 pointer-events-none' : ''}`}>
                             <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2 uppercase tracking-wide">MQTT Broker URL</label>
+                                <label className="block text-sm font-bold text-slate-300 mb-3 uppercase tracking-wide">MQTT Broker URL</label>
                                 <div className="relative">
                                     <input 
                                         type="text" 
                                         value={config.mqtt_broker}
                                         onChange={(e) => setConfig({...config, mqtt_broker: e.target.value})}
-                                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm shadow-inner"
+                                        className="w-full bg-[#0a0e1a] border-2 border-[#2a3350] rounded-xl px-5 py-4 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm shadow-inner transition-all"
                                         placeholder="mqtt://hostname:port"
                                     />
-                                    <div className="absolute right-3 top-3 text-slate-600 text-xs">
-                                        {isConnected ? <span className="text-green-500 font-bold">CONNECTED</span> : 'DISCONNECTED'}
+                                    <div className="absolute right-4 top-4 text-xs font-bold">
+                                        {isConnected ? <span className="text-green-400">● CONNECTED</span> : <span className="text-slate-500">DISCONNECTED</span>}
                                     </div>
                                 </div>
-                                <p className="text-xs text-slate-500 mt-2">
-                                    Supports <span className="font-mono bg-slate-800 px-1 rounded text-slate-300">mqtt://</span>, <span className="font-mono bg-slate-800 px-1 rounded text-slate-300">tcp://</span>, and <span className="font-mono bg-slate-800 px-1 rounded text-slate-300">ws://</span> protocols.
+                                <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                                    Supports <span className="font-mono bg-[#1a1f35] px-2 py-0.5 rounded text-slate-300">mqtt://</span>, <span className="font-mono bg-[#1a1f35] px-2 py-0.5 rounded text-slate-300">tcp://</span>, and <span className="font-mono bg-[#1a1f35] px-2 py-0.5 rounded text-slate-300">ws://</span> protocols.
                                 </p>
                             </div>
 
-                            <div className="pt-6 border-t border-slate-800 flex justify-end">
+                            <div className="pt-6 border-t border-[#2a3350] flex justify-end">
                                 <button 
                                     onClick={handleSaveConfig}
                                     disabled={savingConfig}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-lg font-bold transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-blue-900/20"
+                                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center gap-3 shadow-xl text-base"
                                 >
                                     {savingConfig ? (
                                         <>Saving...</>
                                     ) : (
-                                        <><Save size={18} /> Save Configuration</>
+                                        <><Save size={20} /> Save Configuration</>
                                     )}
                                 </button>
                             </div>
@@ -233,14 +237,14 @@ const App: React.FC = () => {
 const SidebarItem = ({ icon, label, active, onClick }: any) => (
     <button 
         onClick={onClick}
-        className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-200 ${
+        className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 font-semibold text-sm ${
             active 
-            ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' 
-            : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-xl shadow-blue-500/30' 
+            : 'text-slate-400 hover:bg-[#1a1f35] hover:text-white'
         }`}
     >
         <div className="shrink-0">{icon}</div>
-        <span className="font-medium text-sm hidden lg:block">{label}</span>
+        <span className="hidden lg:block">{label}</span>
     </button>
 );
 
