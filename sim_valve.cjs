@@ -148,6 +148,11 @@ function updateScreenFromTelemetry(telemetry) {
     // Update internal state so we don't glitch when changing UI views
     currentVolPct = pct;
     
+    // Update beer name from telemetry if provided
+    if (telemetry.beer_name) {
+        currentBeerName = telemetry.beer_name;
+    }
+    
     sendUiUpdate(isPouring ? 'POURING' : 'IDLE', null);
 }
 

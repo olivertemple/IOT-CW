@@ -43,30 +43,34 @@ const App: React.FC = () => {
       if (data.tapId === selectedTap) {
         setTapState(data);
       }
-      // Update the tap in allTaps array without refetching
+      // Update the tap in allTaps array, add if new
       setAllTaps(prev => {
         const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
         if (tapIndex >= 0) {
           const updated = [...prev];
           updated[tapIndex] = { ...updated[tapIndex], tap: data };
           return updated;
+        } else {
+          // New tap detected - auto-add to list
+          return [...prev, { tapId: data.tapId, tap: data, activeKeg: {} }];
         }
-        return prev;
       });
     });
     socket.on('keg_update', (data) => {
       if (data.tapId === selectedTap) {
         setKegState(data);
       }
-      // Update the keg in allTaps array without refetching
+      // Update the keg in allTaps array, add tap if new
       setAllTaps(prev => {
         const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
         if (tapIndex >= 0) {
           const updated = [...prev];
           updated[tapIndex] = { ...updated[tapIndex], activeKeg: data };
           return updated;
+        } else {
+          // New tap detected - auto-add to list
+          return [...prev, { tapId: data.tapId, tap: {}, activeKeg: data }];
         }
-        return prev;
       });
     });
     socket.on('inventory_data', (data) => setInventory(data));
@@ -87,7 +91,7 @@ const App: React.FC = () => {
     };
   }, [selectedTap]);
 
-  // Fetch all taps periodically
+  // Fetch all taps
   const fetchAllTaps = () => {
     fetch(`${BACKEND_URL}/api/taps`)
       .then(res => res.json())
@@ -99,6 +103,31 @@ const App: React.FC = () => {
         }
       })
       .catch(err => console.error('Failed to fetch taps:', err));
+  };
+
+  // Delete/disconnect tap
+  const handleDeleteTap = (tapId: string) => {
+    if (!confirm(`Are you sure you want to disconnect tap "${tapId}"?`)) return;
+    
+    fetch(`${BACKEND_URL}/api/taps/${tapId}`, {
+      method: 'DELETE',
+    })
+      .then(res => res.json())
+      .then(() => {
+        setAllTaps(prev => prev.filter(t => t.tapId !== tapId));
+        // If deleted tap was selected, clear selection
+        if (selectedTap === tapId) {
+          setSelectedTap(null);
+          setActiveView('taps');
+        }
+        setAlert(`Tap ${tapId} disconnected`);
+        setTimeout(() => setAlert(null), 3000);
+      })
+      .catch(err => {
+        console.error('Failed to delete tap:', err);
+        setAlert(`Error disconnecting tap ${tapId}`);
+        setTimeout(() => setAlert(null), 3000);
+      });
   };
 
   // Load all taps on mount and when connection status changes
@@ -274,80 +303,97 @@ const App: React.FC = () => {
                   return (
                     <div
                       key={tap.tapId}
-                      onClick={() => {
-                        setSelectedTap(tap.tapId);
-                        setTapState(tapData);
-                        setKegState(kegData);
-                        setActiveView('dashboard');
-                      }}
-                      className="bg-white border-2 border-gray-200 hover:border-indigo-400 rounded-2xl p-6 cursor-pointer transition-all hover:shadow-lg"
+                      className="bg-white border-2 border-gray-200 hover:border-indigo-400 rounded-2xl p-6 transition-all hover:shadow-lg relative"
                     >
-                      {/* Tap Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
-                            <Beer size={24} className="text-indigo-600" />
+                      {/* Delete Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteTap(tap.tapId);
+                        }}
+                        className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 flex items-center justify-center text-red-600 transition-colors z-10"
+                        title="Disconnect tap"
+                      >
+                        <X size={16} />
+                      </button>
+                      
+                      {/* Tap Card Content (clickable) */}
+                      <div
+                        onClick={() => {
+                          setSelectedTap(tap.tapId);
+                          setTapState(tapData);
+                          setKegState(kegData);
+                          setActiveView('dashboard');
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {/* Tap Header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+                              <Beer size={24} className="text-indigo-600" />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-900">{tap.tapId}</h3>
+                              <span className="text-xs text-gray-500 uppercase tracking-wide">Tap System</span>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-gray-900">{tap.tapId}</h3>
-                            <span className="text-xs text-gray-500 uppercase tracking-wide">Tap System</span>
-                          </div>
-                        </div>
-                        <div className={`w-3 h-3 rounded-full ${
-                          isPouring ? 'bg-green-500 animate-pulse' : 'bg-gray-300'
-                        }`}></div>
-                      </div>
-
-                      {/* Beer Info */}
-                      <div className="mb-4">
-                        <div className="text-sm text-gray-500 mb-1">Current Beer</div>
-                        <div className="text-xl font-bold text-gray-900">{tapData.beer_name || 'No Keg'}</div>
-                      </div>
-
-                      {/* Quick Stats */}
-                      <div className="grid grid-cols-3 gap-3">
-                        {/* Volume */}
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-gray-900">{Math.round(pct)}%</div>
-                          <div className="text-xs text-gray-500">Level</div>
-                          <div className={`w-full h-1 rounded-full mt-2 ${
-                            pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT ? 'bg-red-200' : 'bg-green-200'
-                          }`}>
-                            <div 
-                              className={`h-full rounded-full ${
-                                pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT ? 'bg-red-500' : 'bg-green-500'
-                              }`}
-                              style={{ width: `${Math.min(100, pct)}%` }}
-                            ></div>
-                          </div>
+                          <div className={`w-3 h-3 rounded-full ${
+                            isPouring ? 'bg-green-500 animate-pulse' : 'bg-gray-300'
+                          }`}></div>
                         </div>
 
-                        {/* Temperature */}
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-gray-900">{temp.toFixed(1)}</div>
-                          <div className="text-xs text-gray-500">°C</div>
-                          <div className={`text-xs font-semibold mt-2 ${
-                            temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'text-red-600' : 'text-blue-600'
-                          }`}>
-                            {temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'Warm' : 'Cool'}
+                        {/* Beer Info */}
+                        <div className="mb-4">
+                          <div className="text-sm text-gray-500 mb-1">Current Beer</div>
+                          <div className="text-xl font-bold text-gray-900">{tapData.beer_name || 'No Keg'}</div>
+                        </div>
+
+                        {/* Quick Stats */}
+                        <div className="grid grid-cols-3 gap-3">
+                          {/* Volume */}
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-gray-900">{Math.round(pct)}%</div>
+                            <div className="text-xs text-gray-500">Level</div>
+                            <div className={`w-full h-1 rounded-full mt-2 ${
+                              pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT ? 'bg-red-200' : 'bg-green-200'
+                            }`}>
+                              <div 
+                                className={`h-full rounded-full ${
+                                  pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT ? 'bg-red-500' : 'bg-green-500'
+                                }`}
+                                style={{ width: `${Math.min(100, pct)}%` }}
+                              ></div>
+                            </div>
+                          </div>
+
+                          {/* Temperature */}
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-gray-900">{temp.toFixed(1)}</div>
+                            <div className="text-xs text-gray-500">°C</div>
+                            <div className={`text-xs font-semibold mt-2 ${
+                              temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'text-red-600' : 'text-blue-600'
+                            }`}>
+                              {temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'Warm' : 'Cool'}
+                            </div>
+                          </div>
+
+                          {/* Flow */}
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-gray-900">{(kegData.flow || 0).toFixed(1)}</div>
+                            <div className="text-xs text-gray-500">LPM</div>
+                            <div className={`text-xs font-semibold mt-2 ${
+                              isPouring ? 'text-green-600' : 'text-gray-400'
+                            }`}>
+                              {isPouring ? 'Pouring' : 'Idle'}
+                            </div>
                           </div>
                         </div>
 
-                        {/* Flow */}
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-gray-900">{(kegData.flow || 0).toFixed(1)}</div>
-                          <div className="text-xs text-gray-500">LPM</div>
-                          <div className={`text-xs font-semibold mt-2 ${
-                            isPouring ? 'text-green-600' : 'text-gray-400'
-                          }`}>
-                            {isPouring ? 'Pouring' : 'Idle'}
-                          </div>
+                        {/* Click indicator */}
+                        <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                          <span className="text-sm text-indigo-600 font-medium">Click for details →</span>
                         </div>
-                      </div>
-
-                      {/* Click indicator */}
-                      <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-                        <span className="text-sm text-indigo-600 font-medium">Click for details →</span>
                       </div>
                     </div>
                   );

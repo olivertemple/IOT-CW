@@ -166,6 +166,28 @@ app.get('/api/taps', (req, res) => {
   res.json({ taps });
 });
 
+// Delete/disconnect a tap system
+app.delete('/api/taps/:tapId', (req, res) => {
+  const tapId = req.params.tapId;
+  
+  if (tapStates[tapId]) {
+    delete tapStates[tapId];
+    console.log(`[API] Deleted tap system: ${tapId}`);
+    io.emit('tap_deleted', { tapId });
+    res.json({ success: true, message: `Tap ${tapId} disconnected` });
+  } else {
+    res.status(404).json({ error: 'Tap not found' });
+  }
+});
+
+// Get list of unique beer names from inventory
+app.get('/api/beers', (req, res) => {
+  db.getInventory((rows) => {
+    const uniqueBeers = [...new Set(rows.map(r => r.beer_name))];
+    res.json({ beers: uniqueBeers });
+  });
+});
+
 // Usage time-series endpoint (hourly aggregated)
 // Query params: ?beer=Hazy%20IPA&from=1610000000000&to=1610003600000
 app.get('/api/usage', (req, res) => {

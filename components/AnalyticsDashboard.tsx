@@ -8,13 +8,30 @@ interface Props {
 }
 
 const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
-  const [beer, setBeer] = useState('Hazy IPA');
+  const [beer, setBeer] = useState('');
+  const [beerList, setBeerList] = useState<string[]>([]);
   const [buckets, setBuckets] = useState<Array<{bucket_ts:number, volume_ml:number}>>([]);
   const [efficiency, setEfficiency] = useState<number | null>(null);
 
   const [showRaw, setShowRaw] = useState(false);
 
+  // Fetch list of available beers from inventory
   useEffect(() => {
+    fetch('/api/beers')
+      .then(r => r.json())
+      .then(data => {
+        const beers = data.beers || [];
+        setBeerList(beers);
+        // Auto-select first beer if not already selected
+        if (beers.length > 0 && !beer) {
+          setBeer(beers[0]);
+        }
+      })
+      .catch(() => setBeerList([]));
+  }, []);
+
+  useEffect(() => {
+    if (!beer) return;
     // fetch last 7 days by default to show more points
     const to = Date.now();
     const from = to - 7 * 24 * 3600000;
@@ -73,9 +90,10 @@ const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
                   onChange={e => setBeer(e.target.value)} 
                   className="bg-white border-2 border-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
-                  <option>Hazy IPA</option>
-                  <option>Stout</option>
-                  <option>Lager</option>
+                  {beerList.length === 0 && <option value="">No beers available</option>}
+                  {beerList.map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
               </select>
           </div>
           
