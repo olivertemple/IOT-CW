@@ -55,7 +55,7 @@ function initDb() {
     // Add tap_id column if it doesn't exist (migration for existing databases)
     db.all(`PRAGMA table_info(inventory)`, [], (err, columns) => {
       if (!err && columns) {
-        const hasTapId = columns.some((col: any) => col.name === 'tap_id');
+        const hasTapId = columns.some(col => col.name === 'tap_id');
         if (!hasTapId) {
           db.run(`ALTER TABLE inventory ADD COLUMN tap_id TEXT`, (alterErr) => {
             if (alterErr) {
