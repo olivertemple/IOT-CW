@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Beer, BarChart3, Package, Settings, Circle, X } from 'lucide-react';
+import { Beer, BarChart3, Package, Settings, Circle, X, Activity } from 'lucide-react';
 import { initSocket, disconnectSocket } from './services/socket';
 import LiveTapView from './components/LiveTapView';
 import InventoryManager from './components/InventoryManager';
@@ -7,13 +7,15 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { BACKEND_URL, UI_CONSTANTS } from './constants';
 
 const App: React.FC = () => {
-  const [activeView, setActiveView] = useState<'dashboard' | 'inventory' | 'analytics'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'inventory' | 'analytics' | 'taps'>('taps');
   const [showSettings, setShowSettings] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [selectedTap, setSelectedTap] = useState<string | null>(null);
   
   // Application State
   const [tapState, setTapState] = useState<any>(null);
   const [kegState, setKegState] = useState<any>(null);
+  const [allTaps, setAllTaps] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -36,8 +38,19 @@ const App: React.FC = () => {
         setIsConnected(false);
     });
 
-    socket.on('tap_update', (data) => setTapState(data));
-    socket.on('keg_update', (data) => setKegState(data));
+    socket.on('tap_update', (data) => {
+      // Update specific tap state and refresh all taps
+      if (data.tapId === selectedTap) {
+        setTapState(data);
+      }
+      fetchAllTaps();
+    });
+    socket.on('keg_update', (data) => {
+      if (data.tapId === selectedTap) {
+        setKegState(data);
+      }
+      fetchAllTaps();
+    });
     socket.on('inventory_data', (data) => setInventory(data));
     socket.on('history_data', (data) => setHistory(data));
     socket.on('orders_data', (data) => setOrders(data));
@@ -51,8 +64,30 @@ const App: React.FC = () => {
       socket.off('connect');
       socket.off('disconnect');
       socket.off('tap_update');
+      socket.off('keg_update');
       disconnectSocket();
     };
+  }, [selectedTap]);
+
+  // Fetch all taps periodically
+  const fetchAllTaps = () => {
+    fetch(`${BACKEND_URL}/api/taps`)
+      .then(res => res.json())
+      .then(data => {
+        setAllTaps(data.taps || []);
+        // Auto-select first tap if none selected
+        if (!selectedTap && data.taps && data.taps.length > 0) {
+          setSelectedTap(data.taps[0].tapId);
+        }
+      })
+      .catch(err => console.error('Failed to fetch taps:', err));
+  };
+
+  // Load all taps on mount and periodically
+  useEffect(() => {
+    fetchAllTaps();
+    const interval = setInterval(fetchAllTaps, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Load Config when settings modal opens
@@ -116,6 +151,12 @@ const App: React.FC = () => {
         {/* Navigation */}
         <nav className="flex-1 flex flex-col gap-4">
           <NavIcon 
+            icon={<Activity size={24} />} 
+            label="Taps"
+            active={activeView === 'taps'}
+            onClick={() => setActiveView('taps')}
+          />
+          <NavIcon 
             icon={<BarChart3 size={24} />} 
             label="Dashboard"
             active={activeView === 'dashboard'}
@@ -169,7 +210,9 @@ const App: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                {activeView === 'dashboard' ? 'Live Dashboard' : activeView === 'inventory' ? 'Stock Management' : 'Analytics'}
+                {activeView === 'taps' ? 'All Tap Systems' : 
+                 activeView === 'dashboard' ? 'Live Dashboard' : 
+                 activeView === 'inventory' ? 'Stock Management' : 'Analytics'}
               </h1>
             </div>
             <div className="flex items-center gap-3">
@@ -179,12 +222,157 @@ const App: React.FC = () => {
                   {isConnected ? 'Online' : 'Offline'}
                 </span>
               </div>
+              {allTaps.length > 0 && (
+                <div className="px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <span className="text-sm font-semibold text-indigo-700">
+                    {allTaps.length} {allTaps.length === 1 ? 'Tap' : 'Taps'} Connected
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
+        {/* Taps Overview */}
+        {activeView === 'taps' && (
+          <div className="space-y-6">
+            {allTaps.length === 0 ? (
+              <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <Activity size={32} className="text-gray-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">No Tap Systems Detected</h3>
+                <p className="text-gray-600">Start a tap system with <code className="bg-gray-100 px-2 py-1 rounded text-sm">node dashboard.cjs --tap=tap-01</code></p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {allTaps.map(tap => {
+                  const tapData = tap.tap || {};
+                  const kegData = tap.activeKeg || {};
+                  const pct = tapData.volume_remaining_pct || 0;
+                  const isPouring = tapData.view === 'POURING';
+                  const temp = kegData.temp || 4.0;
+                  
+                  return (
+                    <div
+                      key={tap.tapId}
+                      onClick={() => {
+                        setSelectedTap(tap.tapId);
+                        setTapState(tapData);
+                        setKegState(kegData);
+                        setActiveView('dashboard');
+                      }}
+                      className="bg-white border-2 border-gray-200 hover:border-indigo-400 rounded-2xl p-6 cursor-pointer transition-all hover:shadow-lg"
+                    >
+                      {/* Tap Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+                            <Beer size={24} className="text-indigo-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-900">{tap.tapId}</h3>
+                            <span className="text-xs text-gray-500 uppercase tracking-wide">Tap System</span>
+                          </div>
+                        </div>
+                        <div className={`w-3 h-3 rounded-full ${
+                          isPouring ? 'bg-green-500 animate-pulse' : 'bg-gray-300'
+                        }`}></div>
+                      </div>
+
+                      {/* Beer Info */}
+                      <div className="mb-4">
+                        <div className="text-sm text-gray-500 mb-1">Current Beer</div>
+                        <div className="text-xl font-bold text-gray-900">{tapData.beer_name || 'No Keg'}</div>
+                      </div>
+
+                      {/* Quick Stats */}
+                      <div className="grid grid-cols-3 gap-3">
+                        {/* Volume */}
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">{Math.round(pct)}%</div>
+                          <div className="text-xs text-gray-500">Level</div>
+                          <div className={`w-full h-1 rounded-full mt-2 ${
+                            pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT ? 'bg-red-200' : 'bg-green-200'
+                          }`}>
+                            <div 
+                              className={`h-full rounded-full ${
+                                pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT ? 'bg-red-500' : 'bg-green-500'
+                              }`}
+                              style={{ width: `${Math.min(100, pct)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Temperature */}
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">{temp.toFixed(1)}</div>
+                          <div className="text-xs text-gray-500">°C</div>
+                          <div className={`text-xs font-semibold mt-2 ${
+                            temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'text-red-600' : 'text-blue-600'
+                          }`}>
+                            {temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'Warm' : 'Cool'}
+                          </div>
+                        </div>
+
+                        {/* Flow */}
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">{(kegData.flow || 0).toFixed(1)}</div>
+                          <div className="text-xs text-gray-500">LPM</div>
+                          <div className={`text-xs font-semibold mt-2 ${
+                            isPouring ? 'text-green-600' : 'text-gray-400'
+                          }`}>
+                            {isPouring ? 'Pouring' : 'Idle'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Click indicator */}
+                      <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                        <span className="text-sm text-indigo-600 font-medium">Click for details →</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeView === 'dashboard' && (
           <div className="space-y-6">
+            {/* Tap Selector */}
+            {allTaps.length > 1 && (
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm font-semibold text-gray-700">Viewing:</span>
+                  {allTaps.map(tap => (
+                    <button
+                      key={tap.tapId}
+                      onClick={() => {
+                        setSelectedTap(tap.tapId);
+                        setTapState(tap.tap);
+                        setKegState(tap.activeKeg);
+                      }}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        selectedTap === tap.tapId
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {tap.tapId}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setActiveView('taps')}
+                    className="ml-auto px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-all"
+                  >
+                    ← Back to All Taps
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               
