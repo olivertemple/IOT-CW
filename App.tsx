@@ -26,6 +26,7 @@ const App: React.FC = () => {
   const [savingConfig, setSavingConfig] = useState(false);
   const [backendError, setBackendError] = useState(false);
 
+  // Initialize socket once on mount (do not re-create when `selectedTap` changes)
   useEffect(() => {
     const socket = initSocket();
 
@@ -38,12 +39,8 @@ const App: React.FC = () => {
         setIsConnected(false);
     });
 
+    // Update tap list (keeps allTaps in sync)
     socket.on('tap_update', (data) => {
-      // Update specific tap state and update tap in allTaps list
-      if (data.tapId === selectedTap) {
-        setTapState(data);
-      }
-      // Update the tap in allTaps array, add if new
       setAllTaps(prev => {
         const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
         if (tapIndex >= 0) {
@@ -51,16 +48,13 @@ const App: React.FC = () => {
           updated[tapIndex] = { ...updated[tapIndex], tap: data };
           return updated;
         } else {
-          // New tap detected - auto-add to list
           return [...prev, { tapId: data.tapId, tap: data, activeKeg: {} }];
         }
       });
     });
+
+    // Update active keg per tap
     socket.on('keg_update', (data) => {
-      if (data.tapId === selectedTap) {
-        setKegState(data);
-      }
-      // Update the keg in allTaps array, add tap if new
       setAllTaps(prev => {
         const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
         if (tapIndex >= 0) {
@@ -68,11 +62,11 @@ const App: React.FC = () => {
           updated[tapIndex] = { ...updated[tapIndex], activeKeg: data };
           return updated;
         } else {
-          // New tap detected - auto-add to list
           return [...prev, { tapId: data.tapId, tap: {}, activeKeg: data }];
         }
       });
     });
+
     socket.on('inventory_data', (data) => setInventory(data));
     socket.on('history_data', (data) => setHistory(data));
     socket.on('orders_data', (data) => setOrders(data));
@@ -81,7 +75,7 @@ const App: React.FC = () => {
         setAlert(data.msg);
         setTimeout(() => setAlert(null), UI_CONSTANTS.ALERT_DURATION_MS);
     });
-    
+
     socket.on('tap_deleted', (data) => {
       setAllTaps(prev => prev.filter(t => t.tapId !== data.tapId));
       if (selectedTap === data.tapId) {
@@ -89,7 +83,7 @@ const App: React.FC = () => {
         setActiveView('taps');
       }
     });
-    
+
     socket.on('tap_status_changed', (data) => {
       setAllTaps(prev => {
         const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
@@ -115,7 +109,17 @@ const App: React.FC = () => {
       socket.off('tap_status_changed');
       disconnectSocket();
     };
-  }, [selectedTap]);
+  }, []);
+
+  // Keep selected tap's detailed state in sync whenever selection or allTaps change
+  useEffect(() => {
+    if (!selectedTap) return;
+    const found = allTaps.find(t => t.tapId === selectedTap);
+    if (found) {
+      setTapState(found.tap || null);
+      setKegState(found.activeKeg || null);
+    }
+  }, [selectedTap, allTaps]);
 
   // Fetch all taps
   const fetchAllTaps = () => {
@@ -160,6 +164,11 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isConnected) {
       fetchAllTaps();
+      // Also fetch inventory via HTTP in case server restarted and socket emissions were missed
+      fetch(`${BACKEND_URL}/api/inventory`)
+        .then(r => r.json())
+        .then(data => setInventory(data.inventory || []))
+        .catch(err => console.warn('Failed to fetch inventory via HTTP:', err));
     }
   }, [isConnected]);
 
@@ -208,6 +217,9 @@ const App: React.FC = () => {
   const temp = kegState?.temp || 4.0;
   const flow = kegState?.flow || 0;
   const isPouring = tapState?.view === 'POURING';
+
+  // When viewing inventory, if a tap is selected show only that tap's inventory
+  const displayedInventory = selectedTap ? inventory.filter((i: any) => i.tap_id === selectedTap) : inventory;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -557,7 +569,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {activeView === 'inventory' && <InventoryManager inventory={inventory} orders={orders} />}
+        {activeView === 'inventory' && <InventoryManager inventory={displayedInventory} orders={orders} />}
         {activeView === 'analytics' && <AnalyticsDashboard history={history} />}
 
       </main>

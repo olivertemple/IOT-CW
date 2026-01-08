@@ -218,6 +218,13 @@ app.get('/api/beers', (req, res) => {
   });
 });
 
+// Expose inventory via HTTP for clients to request on reconnects
+app.get('/api/inventory', (req, res) => {
+  db.getInventory((rows) => {
+    res.json({ inventory: rows });
+  });
+});
+
 // Usage time-series endpoint (hourly aggregated)
 // Query params: ?beer=Hazy%20IPA&from=1610000000000&to=1610003600000
 app.get('/api/usage', (req, res) => {

@@ -23,17 +23,18 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
   // Fetch depletion estimates for all kegs
   useEffect(() => {
     inventory.forEach(keg => {
+      const uid = `${keg.tap_id || 'none'}:${keg.keg_id}`;
       fetch(`/api/depletion/${keg.keg_id}`)
         .then(r => r.json())
         .then(data => {
           if (data.days !== null && data.days !== undefined) {
-            setDepletionData(prev => ({ ...prev, [keg.keg_id]: parseFloat(data.days) }));
+            setDepletionData(prev => ({ ...prev, [uid]: parseFloat(data.days) }));
           } else {
-            setDepletionData(prev => ({ ...prev, [keg.keg_id]: null }));
+            setDepletionData(prev => ({ ...prev, [uid]: null }));
           }
         })
         .catch(() => {
-          setDepletionData(prev => ({ ...prev, [keg.keg_id]: null }));
+          setDepletionData(prev => ({ ...prev, [uid]: null }));
         });
     });
   }, [inventory]);
@@ -102,8 +103,9 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
                   <tbody className="divide-y divide-gray-200">
                     {groupedInventory[beerName].map((keg) => {
                       const pct = (keg.volume_remaining_ml / keg.volume_total_ml) * 100;
+                      const uid = `${keg.tap_id || 'none'}:${keg.keg_id}`;
                       return (
-                        <tr key={keg.keg_id} className="hover:bg-gray-50 transition-colors">
+                        <tr key={uid} className="hover:bg-gray-50 transition-colors">
                           <td className="p-4 font-mono font-bold text-gray-900">{keg.keg_id}</td>
                           <td className="p-4">
                             <div className="flex items-center gap-4">
@@ -123,7 +125,7 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
                             <div className="flex items-center gap-2">
                               {pct < 10 && <TrendingDown className="text-red-500" size={16} />}
                               <span className={pct < 10 ? 'text-red-600 font-semibold' : 'text-gray-600'}>
-                                {formatDepletionTime(depletionData[keg.keg_id])}
+                                {formatDepletionTime(depletionData[uid])}
                               </span>
                             </div>
                           </td>
