@@ -42,9 +42,21 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
     }
   };
 
+  // Group inventory by beer type/tap
+  const groupedInventory = inventory.reduce((acc, keg) => {
+    const beerName = keg.beer_name || 'Unknown Beer';
+    if (!acc[beerName]) {
+      acc[beerName] = [];
+    }
+    acc[beerName].push(keg);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const beerTypes = Object.keys(groupedInventory).sort();
+
   return (
     <div className="space-y-6">
-      {/* Stock Levels */}
+      {/* Stock Levels - Grouped by Beer Type */}
       <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
         <div className="p-6 border-b border-gray-200 flex justify-between items-center">
             <div className="flex items-center gap-3">
@@ -55,58 +67,65 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
             </div>
             <span className="text-xs text-gray-500 font-medium">Synced with Valve Box</span>
         </div>
-        <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-700">
-                <thead className="bg-gray-50 text-gray-900 font-semibold text-xs">
+        
+        {beerTypes.length === 0 ? (
+          <div className="p-12 text-center">
+            <Package className="mx-auto mb-3 text-gray-400" size={48} />
+            <div className="font-semibold text-gray-600">No Keg Data Available</div>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {beerTypes.map((beerName) => (
+              <div key={beerName} className="overflow-x-auto">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide">{beerName}</h4>
+                </div>
+                <table className="w-full text-left text-sm text-gray-700">
+                  <thead className="bg-white text-gray-900 font-semibold text-xs">
                     <tr>
-                        <th className="p-4">Keg ID</th>
-                        <th className="p-4">Beer Type</th>
-                        <th className="p-4">Volume Remaining</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4">Est. Depletion</th>
+                      <th className="p-4">Keg ID</th>
+                      <th className="p-4">Volume Remaining</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4">Est. Depletion</th>
                     </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                    {inventory.map((keg) => {
-                        const pct = (keg.volume_remaining_ml / keg.volume_total_ml) * 100;
-                        return (
-                            <tr key={keg.keg_id} className="hover:bg-gray-50 transition-colors">
-                                <td className="p-4 font-mono font-bold text-gray-900">{keg.keg_id}</td>
-                                <td className="p-4 font-semibold text-gray-900">{keg.beer_name}</td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                            <div className={`h-full rounded-full ${pct < 10 ? 'bg-red-500' : 'bg-indigo-500'}`} style={{ width: `${pct}%` }}></div>
-                                        </div>
-                                        <span className="font-bold text-gray-900 min-w-[60px]">{(keg.volume_remaining_ml / 1000).toFixed(1)} L</span>
-                                        <span className="text-xs text-gray-500">({pct.toFixed(0)}%)</span>
-                                    </div>
-                                </td>
-                                <td className="p-4">
-                                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getStatusColor(keg.status)}`}>
-                                        {keg.status}
-                                    </span>
-                                </td>
-                                <td className="p-4">
-                                    <div className="flex items-center gap-2">
-                                        {pct < 10 && <TrendingDown className="text-red-500" size={16} />}
-                                        <span className={pct < 10 ? 'text-red-600 font-semibold' : 'text-gray-600'}>
-                                            {formatDepletionTime(depletionData[keg.keg_id])}
-                                        </span>
-                                    </div>
-                                </td>
-                            </tr>
-                        );
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {groupedInventory[beerName].map((keg) => {
+                      const pct = (keg.volume_remaining_ml / keg.volume_total_ml) * 100;
+                      return (
+                        <tr key={keg.keg_id} className="hover:bg-gray-50 transition-colors">
+                          <td className="p-4 font-mono font-bold text-gray-900">{keg.keg_id}</td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full ${pct < 10 ? 'bg-red-500' : 'bg-indigo-500'}`} style={{ width: `${pct}%` }}></div>
+                              </div>
+                              <span className="font-bold text-gray-900 min-w-[60px]">{(keg.volume_remaining_ml / 1000).toFixed(1)} L</span>
+                              <span className="text-xs text-gray-500">({pct.toFixed(0)}%)</span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getStatusColor(keg.status)}`}>
+                              {keg.status}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              {pct < 10 && <TrendingDown className="text-red-500" size={16} />}
+                              <span className={pct < 10 ? 'text-red-600 font-semibold' : 'text-gray-600'}>
+                                {formatDepletionTime(depletionData[keg.keg_id])}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
                     })}
-                    {inventory.length === 0 && (
-                        <tr><td colSpan={5} className="p-12 text-center">
-                            <Package className="mx-auto mb-3 text-gray-400" size={48} />
-                            <div className="font-semibold text-gray-600">No Keg Data Available</div>
-                        </td></tr>
-                    )}
-                </tbody>
-            </table>
-        </div>
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Auto Orders */}

@@ -89,6 +89,18 @@ const App: React.FC = () => {
         setActiveView('taps');
       }
     });
+    
+    socket.on('tap_status_changed', (data) => {
+      setAllTaps(prev => {
+        const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
+        if (tapIndex >= 0) {
+          const updated = [...prev];
+          updated[tapIndex] = { ...updated[tapIndex], isConnected: data.isConnected };
+          return updated;
+        }
+        return prev;
+      });
+    });
 
     return () => {
       socket.off('connect');
@@ -100,6 +112,7 @@ const App: React.FC = () => {
       socket.off('orders_data');
       socket.off('alert');
       socket.off('tap_deleted');
+      socket.off('tap_status_changed');
       disconnectSocket();
     };
   }, [selectedTap]);
@@ -348,10 +361,15 @@ const App: React.FC = () => {
                             </div>
                             <div>
                               <h3 className="text-lg font-bold text-gray-900">{tap.tapId}</h3>
-                              <span className="text-xs text-gray-500 uppercase tracking-wide">Tap System</span>
+                              <span className={`text-xs uppercase tracking-wide font-semibold ${
+                                tap.isConnected ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {tap.isConnected ? 'Connected' : 'Disconnected'}
+                              </span>
                             </div>
                           </div>
                           <div className={`w-3 h-3 rounded-full ${
+                            !tap.isConnected ? 'bg-red-500' :
                             isPouring ? 'bg-green-500 animate-pulse' : 'bg-gray-300'
                           }`}></div>
                         </div>

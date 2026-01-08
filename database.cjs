@@ -48,9 +48,17 @@ function initDb() {
       volume_total_ml INTEGER,
       volume_remaining_ml INTEGER,
       status TEXT, -- ACTIVE, STANDBY, EMPTY
+      tap_id TEXT, -- Which tap system this keg belongs to
       last_updated INTEGER
     )`);
-
+    
+    // Add tap_id column if it doesn't exist (migration for existing databases)
+    db.run(`ALTER TABLE inventory ADD COLUMN tap_id TEXT`, (err) => {
+      // Ignore error if column already exists
+      if (err && !err.message.includes('duplicate column')) {
+        console.error('Error adding tap_id column:', err.message);
+      }
+    });
     // Orders
     db.run(`CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,11 +113,11 @@ module.exports = {
       (err) => { if (err) console.error(err.message); }
     );
   },
-  updateKeg: (kegId, beerName, total, remaining, status) => {
+  updateKeg: (kegId, beerName, total, remaining, status, tapId = null) => {
     db.run(
-      `REPLACE INTO inventory (keg_id, beer_name, volume_total_ml, volume_remaining_ml, status, last_updated) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [kegId, beerName, total, remaining, status, Date.now()],
+      `REPLACE INTO inventory (keg_id, beer_name, volume_total_ml, volume_remaining_ml, status, tap_id, last_updated) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [kegId, beerName, total, remaining, status, tapId, Date.now()],
       (err) => { if (err) console.error("Error updating keg:", err.message); }
     );
   },
@@ -127,6 +135,17 @@ module.exports = {
   },
   getInventory: (callback) => {
     db.all(`SELECT * FROM inventory`, [], (err, rows) => callback(rows || []));
+  },
+  deleteKegsByTap: (tapId, callback) => {
+    db.run(`DELETE FROM inventory WHERE tap_id = ?`, [tapId], (err) => {
+      if (err) {
+        console.error('[DB] Error deleting kegs for tap:', err.message);
+        callback && callback(err);
+      } else {
+        console.log(`[DB] Deleted kegs for tap ${tapId}`);
+        callback && callback(null);
+      }
+    });
   },
   getOrders: (callback) => {
       db.all(`SELECT * FROM orders ORDER BY timestamp DESC`, [], (err, rows) => callback(rows || []));
