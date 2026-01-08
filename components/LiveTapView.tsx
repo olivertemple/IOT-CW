@@ -7,9 +7,10 @@ import { UI_CONSTANTS } from '../constants';
 interface Props {
   tapState: any;
   kegState: any;
+  isConnected?: boolean;
 }
 
-const LiveTapView: React.FC<Props> = ({ tapState, kegState }) => {
+const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true }) => {
   const isPouring = tapState?.view === 'POURING';
   const isSwap = tapState?.view === 'SWAP';
   const pct = tapState?.volume_remaining_pct || 0;
@@ -21,6 +22,18 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState }) => {
       
       {/* Keg Visualization */}
       <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-8">
+        {/* Connection Status Badge */}
+        <div className="mb-6">
+          <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold ${
+            isConnected 
+              ? 'bg-green-100 text-green-700 border border-green-200' 
+              : 'bg-red-100 text-red-700 border border-red-200'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            {isConnected ? 'CONNECTED' : 'DISCONNECTED'}
+          </span>
+        </div>
+        
         <div className="flex items-start justify-between gap-12">
           
           {/* Keg Visual */}

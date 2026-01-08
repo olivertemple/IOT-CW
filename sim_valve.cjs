@@ -14,6 +14,7 @@ let currentKegId = KEG_LIST[activeKegIndex];
 let isPouring = false;
 let currentBeerName = "Hazy IPA";
 let currentVolPct = null; // Unknown until telemetry arrives
+let heartbeatInterval = null;
 
 // ANSI Colors
 const PUB = '\x1b[32m';
@@ -38,6 +39,13 @@ client.on('connect', () => {
     client.subscribe(`${SYSTEM_ID}/keg/+/event`);
     
     console.log(`${LOG}[SYSTEM] Listening for UI events and Keg updates...${RESET}`);
+    
+    // Start heartbeat to keep connection alive (every 20 seconds)
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(() => {
+        // Send current UI state as heartbeat
+        sendUiUpdate(isPouring ? 'POURING' : 'IDLE', null);
+    }, 20000);
 });
 
 client.on('message', (topic, message) => {

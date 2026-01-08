@@ -142,7 +142,7 @@ module.exports = {
     db.all(`SELECT * FROM pour_history ORDER BY timestamp DESC LIMIT 50`, [], (err, rows) => callback(rows || []));
   },
   getInventory: (callback) => {
-    db.all(`SELECT * FROM inventory`, [], (err, rows) => callback(rows || []));
+    db.all(`SELECT * FROM inventory ORDER BY beer_name, keg_id`, [], (err, rows) => callback(rows || []));
   },
   deleteKegsByTap: (tapId, callback) => {
     db.run(`DELETE FROM inventory WHERE tap_id = ?`, [tapId], (err) => {

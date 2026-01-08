@@ -295,10 +295,10 @@ const App: React.FC = () => {
                   {isConnected ? 'Online' : 'Offline'}
                 </span>
               </div>
-              {allTaps.length > 0 && (
+              {allTaps.filter(t => t.isConnected).length > 0 && (
                 <div className="px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
                   <span className="text-sm font-semibold text-indigo-700">
-                    {allTaps.length} {allTaps.length === 1 ? 'Tap' : 'Taps'} Connected
+                    {allTaps.filter(t => t.isConnected).length} {allTaps.filter(t => t.isConnected).length === 1 ? 'Tap' : 'Taps'} Connected
                   </span>
                 </div>
               )}
@@ -469,7 +469,9 @@ const App: React.FC = () => {
             )}
 
             {/* Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {selectedTap && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               
               {/* Current Beer */}
               <div className="bg-white border border-gray-200 rounded-2xl p-6">
@@ -542,7 +544,13 @@ const App: React.FC = () => {
             </div>
 
             {/* Detailed View */}
-            <LiveTapView tapState={tapState} kegState={kegState} />
+            <LiveTapView 
+              tapState={tapState} 
+              kegState={kegState} 
+              isConnected={allTaps.find(t => t.tapId === selectedTap)?.isConnected || false}
+            />
+              </>
+            )}
           </div>
         )}
 
