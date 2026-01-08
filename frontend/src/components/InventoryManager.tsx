@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Package, AlertCircle, CheckCircle, Truck, TrendingDown } from 'lucide-react';
+import { BACKEND_URL } from '../constants';
 
 interface Props {
   inventory: any[];
@@ -24,7 +25,7 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
   useEffect(() => {
     inventory.forEach(keg => {
       const uid = `${keg.tap_id || 'none'}:${keg.keg_id}`;
-      fetch(`/api/depletion/${keg.keg_id}`)
+      fetch(`${BACKEND_URL}/api/depletion/${keg.keg_id}`)
         .then(r => r.json())
         .then(data => {
           if (data.days !== null && data.days !== undefined) {

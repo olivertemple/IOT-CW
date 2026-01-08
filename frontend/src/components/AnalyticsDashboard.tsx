@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity } from 'lucide-react';
+import { BACKEND_URL } from '../constants';
 
 interface Props {
   history?: any[];
@@ -16,7 +17,7 @@ const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
 
   // Fetch list of available beers from inventory
   useEffect(() => {
-    fetch('/api/beers')
+    fetch(`${BACKEND_URL}/api/beers`)
       .then(r => r.json())
       .then(data => {
         const beers = data.beers || [];
@@ -34,7 +35,7 @@ const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
     // fetch last 7 days by default to show more points
     const to = Date.now();
     const from = to - 7 * 24 * 3600000;
-    fetch(`/api/usage?beer=${encodeURIComponent(beer)}&from=${from}&to=${to}`)
+    fetch(`${BACKEND_URL}/api/usage?beer=${encodeURIComponent(beer)}&from=${from}&to=${to}`)
       .then(r => r.json())
       .then(data => {
         // debug: ensure frontend received the API payload
