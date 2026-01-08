@@ -39,17 +39,35 @@ const App: React.FC = () => {
     });
 
     socket.on('tap_update', (data) => {
-      // Update specific tap state and refresh all taps
+      // Update specific tap state and update tap in allTaps list
       if (data.tapId === selectedTap) {
         setTapState(data);
       }
-      fetchAllTaps();
+      // Update the tap in allTaps array without refetching
+      setAllTaps(prev => {
+        const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
+        if (tapIndex >= 0) {
+          const updated = [...prev];
+          updated[tapIndex] = { ...updated[tapIndex], tap: data };
+          return updated;
+        }
+        return prev;
+      });
     });
     socket.on('keg_update', (data) => {
       if (data.tapId === selectedTap) {
         setKegState(data);
       }
-      fetchAllTaps();
+      // Update the keg in allTaps array without refetching
+      setAllTaps(prev => {
+        const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
+        if (tapIndex >= 0) {
+          const updated = [...prev];
+          updated[tapIndex] = { ...updated[tapIndex], activeKeg: data };
+          return updated;
+        }
+        return prev;
+      });
     });
     socket.on('inventory_data', (data) => setInventory(data));
     socket.on('history_data', (data) => setHistory(data));
@@ -83,12 +101,12 @@ const App: React.FC = () => {
       .catch(err => console.error('Failed to fetch taps:', err));
   };
 
-  // Load all taps on mount and periodically
+  // Load all taps on mount and when connection status changes
   useEffect(() => {
-    fetchAllTaps();
-    const interval = setInterval(fetchAllTaps, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    if (isConnected) {
+      fetchAllTaps();
+    }
+  }, [isConnected]);
 
   // Load Config when settings modal opens
   useEffect(() => {
