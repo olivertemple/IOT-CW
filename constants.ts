@@ -8,6 +8,23 @@ const envUrl = (import.meta.env && import.meta.env.VITE_BACKEND_URL) as string |
 const runtimeUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3001` : 'http://localhost:3001';
 export const BACKEND_URL = envUrl || runtimeUrl;
 
+// UI Configuration Constants
+export const UI_CONSTANTS = {
+  // Keg volume thresholds
+  LOW_KEG_THRESHOLD_PCT: 20,
+  
+  // Temperature thresholds (Celsius)
+  OPTIMAL_TEMP_MIN: 3,
+  OPTIMAL_TEMP_MAX: 5,
+  HIGH_TEMP_WARNING: 6,
+  
+  // Flow rate configuration (Liters Per Minute)
+  MAX_FLOW_RATE_LPM: 5,
+  
+  // Alert display duration (milliseconds)
+  ALERT_DURATION_MS: 5000,
+};
+
 export const DOC_SECTIONS: DocSection[] = [
   // ... Existing content (kept for reference if needed, or can be minimized) ...
   // Ideally we keep the content here so the "Docs" part of the app still works if we linked it.

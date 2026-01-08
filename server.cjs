@@ -18,17 +18,18 @@ const io = new Server(server, {
   }
 });
 
-const SYSTEM_ID = 'tap-01';
+const DEFAULT_KEG_SIZE_ML = 20000; // Standard 20L keg
+
 let mqttClient = null;
 
 // Keep last-known telemetry per keg for delta calculations
-const lastTelemetry = {}; // kegId -> { vol_remaining_ml, ts }
+const lastTelemetry = {}; // kegId -> { vol_remaining_ml, ts, beer_name }
 
-// In-memory state for real-time broadcasting
-const liveState = {
-    tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null },
-    activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE' }
-};
+// Multi-tap support: track state per tap system
+const tapStates = {}; // tapId -> { tap: {...}, activeKeg: {...}, lastHeartbeat: timestamp }
+
+// Heartbeat timeout (30 seconds)
+const HEARTBEAT_TIMEOUT_MS = 30000;
 
 // --- MQTT Logic ---
 function connectMqtt(brokerUrl) {
@@ -42,27 +43,60 @@ function connectMqtt(brokerUrl) {
 
     mqttClient.on('connect', () => {
       console.log('[MQTT] Connected to broker');
-      mqttClient.subscribe(`${SYSTEM_ID}/ui/display`);
-      mqttClient.subscribe(`${SYSTEM_ID}/keg/+/status`);
-      mqttClient.subscribe(`${SYSTEM_ID}/keg/+/event`);
+      // Subscribe to ALL tap systems using wildcards
+      mqttClient.subscribe('+/ui/display');
+      mqttClient.subscribe('+/keg/+/status');
+      mqttClient.subscribe('+/keg/+/event');
+      console.log('[MQTT] Subscribed to all tap systems (+/ui/display, +/keg/+/status, +/keg/+/event)');
     });
 
     mqttClient.on('message', (topic, message) => {
       try {
         const payload = JSON.parse(message.toString());
+        const topicParts = topic.split('/');
         
-        // 1. Tap Display Updates
+        // 1. Tap Display Updates (tapId/ui/display)
         if (topic.includes('/ui/display')) {
-            liveState.tap = payload;
-            io.emit('tap_update', liveState.tap);
+            const tapId = topicParts[0];
+            if (!tapStates[tapId]) {
+              tapStates[tapId] = {
+                tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null, beer_name: 'Unknown' },
+                activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE' },
+                lastHeartbeat: Date.now(),
+                isConnected: true
+              };
+            }
+            tapStates[tapId].tap = payload;
+            tapStates[tapId].lastHeartbeat = Date.now();
+            tapStates[tapId].isConnected = true;
+            io.emit('tap_update', { tapId, isConnected: true, ...payload });
         }
 
-        // 2. Keg Telemetry
+        // 2. Keg Telemetry (tapId/keg/kegId/status)
         else if (topic.includes('/status')) {
-            const kegId = topic.split('/')[2];
+            const tapId = topicParts[0];
+            const kegId = topicParts[2];
             
-            // Persist to DB
-            db.updateKeg(kegId, "Hazy IPA", 20000, payload.vol_remaining_ml, payload.state);
+            // Auto-register tap if not exists
+            if (!tapStates[tapId]) {
+              tapStates[tapId] = {
+                tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null, beer_name: payload.beer_name || 'Unknown' },
+                activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE' },
+                lastHeartbeat: Date.now(),
+                isConnected: true
+              };
+              console.log(`[MQTT] Auto-registered new tap system: ${tapId}`);
+            }
+            
+            // Update heartbeat on any keg status message
+            tapStates[tapId].lastHeartbeat = Date.now();
+            tapStates[tapId].isConnected = true;
+            
+            // Get beer name from payload or use previous value
+            const beerName = payload.beer_name || lastTelemetry[kegId]?.beer_name || "Unknown Beer";
+            
+            // Persist to DB with tap association
+            db.updateKeg(kegId, beerName, payload.vol_total_ml || DEFAULT_KEG_SIZE_ML, payload.vol_remaining_ml, payload.state, tapId);
 
             // Log telemetry snapshot for time-series analysis
             try {
@@ -74,38 +108,42 @@ function connectMqtt(brokerUrl) {
             if (last && typeof last.vol_remaining_ml === 'number' && payload.vol_remaining_ml < last.vol_remaining_ml) {
               const delta = Math.max(0, last.vol_remaining_ml - payload.vol_remaining_ml);
               const bucket = Math.floor(Date.now() / 3600000) * 3600000; // hour start in ms
-              db.addUsageHour(bucket, "Hazy IPA", delta);
+              db.addUsageHour(bucket, beerName, delta);
             }
-            lastTelemetry[kegId] = { vol_remaining_ml: payload.vol_remaining_ml, ts: Date.now() };
+            lastTelemetry[kegId] = { vol_remaining_ml: payload.vol_remaining_ml, ts: Date.now(), beer_name: beerName };
 
             // Update Live State if it's the active pumping keg
             if (payload.state === 'PUMPING') {
-                liveState.activeKeg = {
+                tapStates[tapId].activeKeg = {
                     id: kegId,
                     flow: payload.flow_lpm,
                     temp: payload.temp_beer_c,
                     state: payload.state
                 };
-                io.emit('keg_update', liveState.activeKeg);
-            } else if (liveState.activeKeg.id === kegId && payload.state === 'IDLE') {
-                liveState.activeKeg.state = 'IDLE';
-                liveState.activeKeg.flow = 0;
-                io.emit('keg_update', liveState.activeKeg);
+                io.emit('keg_update', { tapId, ...tapStates[tapId].activeKeg });
+            } else if (tapStates[tapId].activeKeg.id === kegId && payload.state === 'IDLE') {
+                tapStates[tapId].activeKeg.state = 'IDLE';
+                tapStates[tapId].activeKeg.flow = 0;
+                io.emit('keg_update', { tapId, ...tapStates[tapId].activeKeg });
                 
                 // Logic: If idle and < 10% remaining, trigger auto-order
                 if (payload.vol_remaining_ml < 2000) {
-                    db.createOrder(kegId, "Hazy IPA");
-                    io.emit('order_created', { kegId, beer: "Hazy IPA" });
+                    db.createOrder(kegId, beerName);
+                    io.emit('order_created', { kegId, beer: beerName, tapId });
                 }
             }
         }
         
-        // 3. Critical Events
+        // 3. Critical Events (tapId/keg/kegId/event)
         else if (topic.includes('/event')) {
+            const tapId = topicParts[0];
+            const kegId = topicParts[2];
+            const beerName = lastTelemetry[kegId]?.beer_name || "Unknown Beer";
+            
             if (payload.event === 'EMPTY_DETECTED') {
-                 const kegId = topic.split('/')[2];
-                 db.updateKeg(kegId, "Hazy IPA", 20000, 0, "EMPTY");
-                 io.emit('alert', { type: 'error', msg: `Keg ${kegId} Empty! Swapping...` });
+                 const tapId = topicParts[0];
+                 db.updateKeg(kegId, beerName, DEFAULT_KEG_SIZE_ML, 0, "EMPTY", tapId);
+                 io.emit('alert', { type: 'error', msg: `Keg ${kegId} on ${tapId} Empty! Swapping...` });
             }
         }
 
@@ -130,6 +168,61 @@ app.get('/api/config', (req, res) => {
     db.getSetting('mqtt_broker', (url) => {
         res.json({ mqtt_broker: url || 'mqtt://test.mosquitto.org' });
     });
+});
+
+// List all detected tap systems
+app.get('/api/taps', (req, res) => {
+  const taps = Object.keys(tapStates).map(tapId => ({
+    tapId,
+    tap: tapStates[tapId].tap,
+    activeKeg: tapStates[tapId].activeKeg,
+    isConnected: tapStates[tapId].isConnected || false,
+    lastHeartbeat: tapStates[tapId].lastHeartbeat || 0
+  }));
+  res.json({ taps });
+});
+
+// Delete/disconnect a tap system
+app.delete('/api/taps/:tapId', (req, res) => {
+  const tapId = req.params.tapId;
+  
+  if (tapStates[tapId]) {
+    // Delete tap state
+    delete tapStates[tapId];
+    
+    // Delete all kegs associated with this tap from inventory
+    db.deleteKegsByTap(tapId, (err) => {
+      if (err) {
+        console.error(`[API] Failed to delete kegs for tap ${tapId}:`, err.message);
+        res.status(500).json({ error: `Failed to delete kegs: ${err.message}` });
+      } else {
+        console.log(`[API] Deleted tap system and kegs: ${tapId}`);
+        io.emit('tap_deleted', { tapId });
+        
+        // Broadcast updated inventory to all clients
+        db.getInventory((rows) => io.emit('inventory_data', rows));
+        
+        res.json({ success: true, message: `Tap ${tapId} disconnected and kegs removed` });
+      }
+    });
+  } else {
+    res.status(404).json({ error: 'Tap not found' });
+  }
+});
+
+// Get list of unique beer names from inventory
+app.get('/api/beers', (req, res) => {
+  db.getInventory((rows) => {
+    const uniqueBeers = [...new Set(rows.map(r => r.beer_name))];
+    res.json({ beers: uniqueBeers });
+  });
+});
+
+// Expose inventory via HTTP for clients to request on reconnects
+app.get('/api/inventory', (req, res) => {
+  db.getInventory((rows) => {
+    res.json({ inventory: rows });
+  });
 });
 
 // Usage time-series endpoint (hourly aggregated)
@@ -167,13 +260,47 @@ app.post('/api/config', (req, res) => {
     }
 });
 
+// Efficiency calculation endpoint
+app.get('/api/efficiency', (req, res) => {
+  db.calculateEfficiency((efficiency) => {
+    if (efficiency === null) {
+      res.json({ efficiency: null, message: 'Insufficient data' });
+    } else {
+      res.json({ efficiency: efficiency.toFixed(1) });
+    }
+  });
+});
+
+// Depletion estimation endpoint
+app.get('/api/depletion/:kegId', (req, res) => {
+  const kegId = req.params.kegId;
+  
+  db.getInventory((rows) => {
+    const keg = rows.find(k => k.keg_id === kegId);
+    if (!keg) {
+      res.status(404).json({ error: 'Keg not found' });
+      return;
+    }
+    
+    db.estimateDepletion(kegId, keg.volume_remaining_ml, (daysRemaining) => {
+      if (daysRemaining === null) {
+        res.json({ days: null, message: 'Insufficient usage data' });
+      } else {
+        res.json({ days: daysRemaining.toFixed(1), kegId, currentVolume: keg.volume_remaining_ml });
+      }
+    });
+  });
+});
+
 // --- Socket.io ---
 io.on('connection', (socket) => {
   console.log('Frontend Connected:', socket.id);
   
-  // Send initial state
-  socket.emit('tap_update', liveState.tap);
-  socket.emit('keg_update', liveState.activeKeg);
+  // Send initial state for all taps
+  Object.keys(tapStates).forEach(tapId => {
+    socket.emit('tap_update', { tapId, ...tapStates[tapId].tap });
+    socket.emit('keg_update', { tapId, ...tapStates[tapId].activeKeg });
+  });
   
   // Send initial DB data
   db.getInventory((rows) => socket.emit('inventory_data', rows));
@@ -190,6 +317,22 @@ setInterval(() => {
     db.getInventory((rows) => io.emit('inventory_data', rows));
     db.getOrders((rows) => io.emit('orders_data', rows));
 }, 5000);
+
+// Check for disconnected taps (heartbeat timeout)
+setInterval(() => {
+  const now = Date.now();
+  Object.keys(tapStates).forEach(tapId => {
+    const tap = tapStates[tapId];
+    const timeSinceHeartbeat = now - (tap.lastHeartbeat || 0);
+    
+    if (timeSinceHeartbeat > HEARTBEAT_TIMEOUT_MS && tap.isConnected) {
+      // Mark as disconnected
+      tap.isConnected = false;
+      console.log(`[HEARTBEAT] Tap ${tapId} disconnected (timeout)`);
+      io.emit('tap_status_changed', { tapId, isConnected: false });
+    }
+  });
+}, 10000); // Check every 10 seconds
 
 const PORT = 3001;
 server.listen(PORT, () => {

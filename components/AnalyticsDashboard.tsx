@@ -1,18 +1,36 @@
 
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Activity } from 'lucide-react';
 
 interface Props {
   history?: any[];
 }
 
 const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
-  const [beer, setBeer] = useState('Hazy IPA');
+  const [beer, setBeer] = useState('');
+  const [beerList, setBeerList] = useState<string[]>([]);
   const [buckets, setBuckets] = useState<Array<{bucket_ts:number, volume_ml:number}>>([]);
 
   const [showRaw, setShowRaw] = useState(false);
 
+  // Fetch list of available beers from inventory
   useEffect(() => {
+    fetch('/api/beers')
+      .then(r => r.json())
+      .then(data => {
+        const beers = data.beers || [];
+        setBeerList(beers);
+        // Auto-select first beer if not already selected
+        if (beers.length > 0 && !beer) {
+          setBeer(beers[0]);
+        }
+      })
+      .catch(() => setBeerList([]));
+  }, []);
+
+  useEffect(() => {
+    if (!beer) return;
     // fetch last 7 days by default to show more points
     const to = Date.now();
     const from = to - 7 * 24 * 3600000;
@@ -27,6 +45,7 @@ const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
       .catch(() => setBuckets([]));
   }, [beer]);
 
+
   const chartData = buckets.map(b => ({
     bucket_ts: b.bucket_ts,
     // keep a human-readable label for other uses
@@ -39,59 +58,94 @@ const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
   const totalMl = buckets.reduce((s, b) => s + (b.volume_ml || 0), 0);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 gap-6">
        {/* Volume Chart */}
-       <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
-          <h3 className="text-lg font-bold text-white mb-6">Pour Volume (Last Hour)</h3>
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-sm text-slate-400">Beer</div>
-            <select value={beer} onChange={e => setBeer(e.target.value)} className="bg-slate-800 text-white px-2 py-1 rounded">
-              <option>Hazy IPA</option>
-              <option>Stout</option>
-              <option>Lager</option>
-            </select>
+       <div className="xl:col-span-2 bg-white border border-gray-200 rounded-2xl p-8">
+          <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                      <Activity className="text-indigo-600" size={20} />
+                  </div>
+                  <div>
+                      <h3 className="text-xl font-bold text-gray-900">Pour Volume</h3>
+                      <p className="text-sm text-gray-600 mt-0.5">Last 7 days activity</p>
+                  </div>
+              </div>
+              <select 
+                  value={beer} 
+                  onChange={e => setBeer(e.target.value)} 
+                  className="bg-white border-2 border-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              >
+                  {beerList.length === 0 && <option value="">No beers available</option>}
+                  {beerList.map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+              </select>
           </div>
-          <div className="mb-2 text-slate-200">Total: <span className="font-bold">{totalMl} ml</span></div>
-          <div className="mb-4">
-            <button onClick={() => setShowRaw(s => !s)} className="text-sm text-slate-400 underline">
-              {showRaw ? 'Hide' : 'Show'} raw data
-            </button>
+          
+          <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-baseline gap-2">
+                  <span className="text-sm text-gray-600 font-medium">Total Volume:</span>
+                  <span className="text-3xl font-bold text-gray-900">{totalMl}</span>
+                  <span className="text-gray-500 text-base font-medium">ml</span>
+              </div>
+              <button 
+                  onClick={() => setShowRaw(s => !s)} 
+                  className="text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
+              >
+                  {showRaw ? 'Hide' : 'Show'} raw data
+              </button>
           </div>
+          
           {showRaw && (
-            <pre className="text-xs bg-slate-800 p-3 rounded text-slate-200 overflow-auto max-h-40 mb-4">{JSON.stringify(buckets, null, 2)}</pre>
+            <pre className="text-xs bg-gray-50 p-4 rounded-xl text-gray-700 overflow-auto max-h-40 mb-6 border border-gray-200 font-mono">{JSON.stringify(buckets, null, 2)}</pre>
           )}
+          
           {totalMl === 0 && buckets.length > 0 ? (
-            <div className="py-8 text-center text-slate-400">No usage in the selected range.</div>
+            <div className="py-16 text-center">
+                <Activity className="mx-auto mb-4 text-gray-300" size={64} />
+                <div className="text-gray-600 font-medium">No usage in the selected range</div>
+            </div>
           ) : (
-          <div className="h-64">
+          <div className="h-80 bg-gray-50 rounded-xl p-4 border border-gray-200">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                        <XAxis dataKey="bucket_ts" stroke="#64748b" fontSize={11} interval={tickInterval} tick={{ fill: '#94a3b8' }} angle={-45} textAnchor="end" height={60} tickFormatter={(ts) => new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit' })} />
-                        <YAxis stroke="#64748b" fontSize={12} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis 
+                            dataKey="bucket_ts" 
+                            stroke="#9ca3af" 
+                            fontSize={11} 
+                            interval={tickInterval} 
+                            tick={{ fill: '#6b7280' }} 
+                            angle={-45} 
+                            textAnchor="end" 
+                            height={60} 
+                            tickFormatter={(ts) => new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit' })} 
+                        />
+                        <YAxis stroke="#9ca3af" fontSize={12} tick={{ fill: '#6b7280' }} />
                         <Tooltip 
-                            contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }}
-                            cursor={{ fill: '#334155', opacity: 0.4 }}
-                            // label will be the bucket_ts (number) so format accordingly
+                            contentStyle={{ 
+                                backgroundColor: '#ffffff', 
+                                borderColor: '#e5e7eb', 
+                                color: '#111827',
+                                borderRadius: '12px',
+                                border: '2px solid #e5e7eb',
+                                padding: '12px',
+                                fontWeight: '600'
+                            }}
+                            cursor={{ fill: '#f3f4f6', opacity: 0.5 }}
                             labelFormatter={(label) => {
                               try { return new Date(Number(label)).toLocaleString(); } catch { return String(label); }
                             }}
                         />
-                    <Bar dataKey="volume" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="volume" fill="#4f46e5" radius={[8, 8, 0, 0]} />
                 </BarChart>
             </ResponsiveContainer>
           </div>
           )}
        </div>
 
-       {/* Efficiency Metric */}
-       <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 flex flex-col justify-center items-center text-center">
-          <h3 className="text-lg font-bold text-slate-400 mb-2">System Efficiency</h3>
-          <div className="text-6xl font-bold text-green-400 mb-2">98.5%</div>
-          <p className="text-slate-500 text-sm max-w-xs">
-            Calculated based on flow-meter vs load-cell discrepancies over the last 24 hours.
-          </p>
-       </div>
+       {/* System Efficiency removed per request */}
     </div>
   );
 };

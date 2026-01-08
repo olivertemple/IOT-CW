@@ -2,8 +2,8 @@
 const mqtt = require('mqtt');
 const readline = require('readline');
 
-// Configuration
-const SYSTEM_ID = 'tap-01';
+// Configuration - Accept tap name from command line
+const SYSTEM_ID = process.argv[2] || 'tap-01';
 const BROKER = 'mqtt://test.mosquitto.org'; // Public test broker
 
 const client = mqtt.connect(BROKER);

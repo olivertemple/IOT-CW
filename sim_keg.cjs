@@ -1,12 +1,13 @@
 
 const mqtt = require('mqtt');
 
-// Arguments: node keg.js <KEG_ID> <START_VOL_ML>
+// Arguments: node keg.js <KEG_ID> <START_VOL_ML> <SYSTEM_ID> <BEER_NAME>
 const args = process.argv.slice(2);
-const SYSTEM_ID = 'tap-01';
 const DEVICE_ID = args[0] || 'keg-A';
 const MAX_VOL = 20000; // 20L
 let volumeMl = parseInt(args[1]) || MAX_VOL;
+const SYSTEM_ID = args[2] || 'tap-01';
+const BEER_NAME = args[3] || 'Hazy IPA';
 
 // MQTT Config
 const BROKER = 'mqtt://test.mosquitto.org';
@@ -28,8 +29,8 @@ const RESET = '\x1b[0m';
 let state = 'IDLE'; // IDLE or PUMPING
 let pumpInterval = null;
 
-console.log(`--- SMART KEG SIMULATION (${DEVICE_ID}) ---`);
-console.log(`[INIT] Volume: ${volumeMl}ml`);
+console.log(`--- SMART KEG SIMULATION (${DEVICE_ID}) on ${SYSTEM_ID} ---`);
+console.log(`[INIT] Beer: ${BEER_NAME}, Volume: ${volumeMl}ml`);
 
 client.on('connect', () => {
     console.log(`${LOG}[SYSTEM] Connected to Broker${RESET}`);
@@ -43,6 +44,8 @@ client.on('connect', () => {
         temp_cellar_c: 12.0,
         weight_raw_g: volumeMl + 200,
         vol_remaining_ml: volumeMl,
+        vol_total_ml: MAX_VOL,
+        beer_name: BEER_NAME,
         pump_duty: 0
     };
     console.log(`${PUB}[PUB]  INITIAL STATUS: ${volumeMl}ml${RESET}`);
@@ -90,6 +93,8 @@ function startPump(config) {
             temp_cellar_c: 12.0,
             weight_raw_g: volumeMl + 200, // + tare weight
             vol_remaining_ml: volumeMl,
+            vol_total_ml: MAX_VOL,
+            beer_name: BEER_NAME,
             pump_duty: config.pwm_duty
         };
         console.log(`${PUB}[PUB]  STATUS: ${volumeMl}ml left${RESET}`);
@@ -121,6 +126,8 @@ function stopPump() {
         temp_cellar_c: 12.0,
         weight_raw_g: volumeMl + 200,
         vol_remaining_ml: volumeMl,
+        vol_total_ml: MAX_VOL,
+        beer_name: BEER_NAME,
         pump_duty: 0
     };
     console.log(`DATA: ${JSON.stringify(status)}`);

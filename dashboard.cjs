@@ -24,12 +24,25 @@ function resolveScriptPath(baseName) {
     return path.join(__dirname, baseName + '.js');
 }
 
-// --- CONFIGURATION ---
-const KEGS = [
-  { id: 'keg-A', vol: 1000 }, // Start low to test auto-swap quickly
-  { id: 'keg-B', vol: 20000 }, // Full backup
-  { id: 'keg-C', vol: 20000 }  // Extra backup
+// Parse command-line arguments
+const args = process.argv.slice(2);
+const TAP_NAME = args.find(arg => arg.startsWith('--tap='))?.split('=')[1] || 'tap-01';
+const BEER_NAME = args.find(arg => arg.startsWith('--beer='))?.split('=')[1] || 'Hazy IPA';
+
+// Parse kegs argument: --kegs=keg-A:1000,keg-B:20000,keg-C:20000
+const kegsArg = args.find(arg => arg.startsWith('--kegs='))?.split('=')[1];
+const KEGS = kegsArg ? kegsArg.split(',').map(k => {
+  const [id, vol] = k.split(':');
+  return { id, vol: parseInt(vol) || 20000, beer: BEER_NAME };
+}) : [
+  { id: 'keg-A', vol: 1000, beer: BEER_NAME }, // Start low to test auto-swap quickly
+  { id: 'keg-B', vol: 20000, beer: BEER_NAME }, // Full backup
+  { id: 'keg-C', vol: 20000, beer: BEER_NAME }  // Extra backup
 ];
+
+console.log(`Starting SmartTap Dashboard for: ${TAP_NAME}`);
+console.log(`Beer: ${BEER_NAME}`);
+console.log(`Kegs: ${KEGS.map(k => `${k.id}(${k.vol}ml)`).join(', ')}`);
 
 // --- STATE MANAGEMENT ---
 const systemState = {
@@ -141,11 +154,11 @@ function spawnProcess(label, cmd, args) {
 }
 
 // Start Simulations using robust path resolution (.cjs or .js)
-const valveProcess = spawnProcess('[VALVE]', 'node', [resolveScriptPath('sim_valve')]);
-const tapProcess = spawnProcess('[TAP]', 'node', [resolveScriptPath('sim_tap')]);
+const valveProcess = spawnProcess('[VALVE]', 'node', [resolveScriptPath('sim_valve'), TAP_NAME]);
+const tapProcess = spawnProcess('[TAP]', 'node', [resolveScriptPath('sim_tap'), TAP_NAME]);
 
 const kegProcesses = KEGS.map(k => {
-  return spawnProcess(`[${k.id}]`, 'node', [resolveScriptPath('sim_keg'), k.id, k.vol.toString()]);
+  return spawnProcess(`[${k.id}]`, 'node', [resolveScriptPath('sim_keg'), k.id, k.vol.toString(), TAP_NAME, k.beer]);
 });
 
 // --- PARSING LOGIC ---
