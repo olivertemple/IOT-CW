@@ -43,28 +43,54 @@ function initDb() {
 
     // Inventory / Keg Status
     db.run(`CREATE TABLE IF NOT EXISTS inventory (
-      keg_id TEXT PRIMARY KEY,
+      keg_id TEXT,
       beer_name TEXT,
       volume_total_ml INTEGER,
       volume_remaining_ml INTEGER,
       status TEXT, -- ACTIVE, STANDBY, EMPTY
       tap_id TEXT, -- Which tap system this keg belongs to
-      last_updated INTEGER
+      last_updated INTEGER,
+      PRIMARY KEY (tap_id, keg_id)
     )`);
     
-    // Add tap_id column if it doesn't exist (migration for existing databases)
+    // Migration: Check if we need to recreate table with composite primary key
     db.all(`PRAGMA table_info(inventory)`, [], (err, columns) => {
-      if (!err && columns) {
-        const hasTapId = columns.some(col => col.name === 'tap_id');
-        if (!hasTapId) {
-          db.run(`ALTER TABLE inventory ADD COLUMN tap_id TEXT`, (alterErr) => {
-            if (alterErr) {
-              console.error('Error adding tap_id column:', alterErr.message);
-            } else {
-              console.log('Successfully added tap_id column to inventory table');
+      if (!err && columns && columns.length > 0) {
+        // Check if primary key is composite (tap_id, keg_id)
+        db.all(`PRAGMA index_list(inventory)`, [], (idxErr, indexes) => {
+          if (!idxErr) {
+            // If table exists but doesn't have composite key, recreate it
+            const hasTapId = columns.some(col => col.name === 'tap_id');
+            const kegIdCol = columns.find(col => col.name === 'keg_id');
+            
+            // If keg_id is still the sole primary key (pk=1), we need to migrate
+            if (kegIdCol && kegIdCol.pk === 1 && hasTapId) {
+              console.log('[DB] Migrating inventory table to composite primary key...');
+              db.serialize(() => {
+                // Backup existing data
+                db.run(`CREATE TABLE inventory_backup AS SELECT * FROM inventory`);
+                // Drop old table
+                db.run(`DROP TABLE inventory`);
+                // Recreate with composite key
+                db.run(`CREATE TABLE inventory (
+                  keg_id TEXT,
+                  beer_name TEXT,
+                  volume_total_ml INTEGER,
+                  volume_remaining_ml INTEGER,
+                  status TEXT,
+                  tap_id TEXT,
+                  last_updated INTEGER,
+                  PRIMARY KEY (tap_id, keg_id)
+                )`);
+                // Restore data (kegs without tap_id will be skipped)
+                db.run(`INSERT OR IGNORE INTO inventory SELECT * FROM inventory_backup WHERE tap_id IS NOT NULL`);
+                // Clean up
+                db.run(`DROP TABLE inventory_backup`);
+                console.log('[DB] Inventory table migration complete');
+              });
             }
-          });
-        }
+          }
+        });
       }
     });
     // Orders
