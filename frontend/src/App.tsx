@@ -23,7 +23,7 @@ const App: React.FC = () => {
   // Custom hooks for data management
   const { socket, isConnected } = useSocketConnection();
   const allTaps = useTapData(socket, isConnected);
-  const { inventory, orders } = useInventoryData(socket, isConnected, selectedTap);
+  const { inventory, orders } = useInventoryData(socket, isConnected);
   const history = useHistoryData(socket);
   const { alert, showAlert } = useAlerts(socket);
 

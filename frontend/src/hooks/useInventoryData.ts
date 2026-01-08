@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export const useInventoryData = (socket: any, isConnected: boolean, selectedTap: string | null) => {
+export const useInventoryData = (socket: any, isConnected: boolean) => {
   const [inventory, setInventory] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
 
@@ -16,9 +16,5 @@ export const useInventoryData = (socket: any, isConnected: boolean, selectedTap:
     };
   }, [socket]);
 
-  const displayedInventory = selectedTap 
-    ? inventory.filter((i: any) => i.tap_id === selectedTap) 
-    : inventory;
-
-  return { inventory: displayedInventory, orders };
+  return { inventory, orders };
 };
