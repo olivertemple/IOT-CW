@@ -28,6 +28,12 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
     });
   }, [inventory]);
 
+  const formatDepletionTime = (days: number | null | undefined): string => {
+    if (days === null || days === undefined) return 'Calculating...';
+    if (days < 1) return '<1 day';
+    return `${Math.round(days)} days`;
+  };
+
   const getStatusColor = (status: string) => {
     switch(status) {
         case 'PUMPING': return 'text-green-700 bg-green-100 border-green-200';
@@ -85,11 +91,7 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
                                     <div className="flex items-center gap-2">
                                         {pct < 10 && <TrendingDown className="text-red-500" size={16} />}
                                         <span className={pct < 10 ? 'text-red-600 font-semibold' : 'text-gray-600'}>
-                                            {depletionData[keg.keg_id] !== undefined && depletionData[keg.keg_id] !== null
-                                              ? `${depletionData[keg.keg_id]! < 1 
-                                                  ? '<1 day' 
-                                                  : `${Math.round(depletionData[keg.keg_id]!)} days`}`
-                                              : 'Calculating...'}
+                                            {formatDepletionTime(depletionData[keg.keg_id])}
                                         </span>
                                     </div>
                                 </td>

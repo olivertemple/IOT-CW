@@ -182,8 +182,8 @@ module.exports.calculateEfficiency = (callback) => {
         const timeDeltaSec = (curr.timestamp - prev.timestamp) / 1000;
         const volumeDelta = Math.max(0, prev.vol_remaining_ml - curr.vol_remaining_ml);
         
-        // Flow-based volume (flow_lpm * time_minutes)
-        const flowBasedVolume = (prev.flow_lpm * timeDeltaSec) / 60;
+        // Flow-based volume (flow_lpm * time_minutes * 1000 to convert L to ml)
+        const flowBasedVolume = (prev.flow_lpm * timeDeltaSec * 1000) / 60;
         
         totalFlowVolume += flowBasedVolume;
         totalActualVolume += volumeDelta;

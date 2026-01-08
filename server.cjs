@@ -18,6 +18,8 @@ const io = new Server(server, {
   }
 });
 
+const DEFAULT_KEG_SIZE_ML = 20000; // Standard 20L keg
+
 let mqttClient = null;
 
 // Keep last-known telemetry per keg for delta calculations
@@ -81,7 +83,7 @@ function connectMqtt(brokerUrl) {
             const beerName = payload.beer_name || lastTelemetry[kegId]?.beer_name || "Unknown Beer";
             
             // Persist to DB
-            db.updateKeg(kegId, beerName, payload.vol_total_ml || 20000, payload.vol_remaining_ml, payload.state);
+            db.updateKeg(kegId, beerName, payload.vol_total_ml || DEFAULT_KEG_SIZE_ML, payload.vol_remaining_ml, payload.state);
 
             // Log telemetry snapshot for time-series analysis
             try {
@@ -126,7 +128,7 @@ function connectMqtt(brokerUrl) {
             const beerName = lastTelemetry[kegId]?.beer_name || "Unknown Beer";
             
             if (payload.event === 'EMPTY_DETECTED') {
-                 db.updateKeg(kegId, beerName, 20000, 0, "EMPTY");
+                 db.updateKeg(kegId, beerName, DEFAULT_KEG_SIZE_ML, 0, "EMPTY");
                  io.emit('alert', { type: 'error', msg: `Keg ${kegId} on ${tapId} Empty! Swapping...` });
             }
         }
