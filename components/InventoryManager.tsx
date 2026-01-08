@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Package, AlertCircle, CheckCircle, Truck, TrendingDown } from 'lucide-react';
 
 interface Props {
@@ -8,6 +8,26 @@ interface Props {
 }
 
 const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
+  const [depletionData, setDepletionData] = useState<Record<string, number | null>>({});
+
+  // Fetch depletion estimates for all kegs
+  useEffect(() => {
+    inventory.forEach(keg => {
+      fetch(`/api/depletion/${keg.keg_id}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.days !== null && data.days !== undefined) {
+            setDepletionData(prev => ({ ...prev, [keg.keg_id]: parseFloat(data.days) }));
+          } else {
+            setDepletionData(prev => ({ ...prev, [keg.keg_id]: null }));
+          }
+        })
+        .catch(() => {
+          setDepletionData(prev => ({ ...prev, [keg.keg_id]: null }));
+        });
+    });
+  }, [inventory]);
+
   const getStatusColor = (status: string) => {
     switch(status) {
         case 'PUMPING': return 'text-green-700 bg-green-100 border-green-200';
@@ -65,7 +85,11 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
                                     <div className="flex items-center gap-2">
                                         {pct < 10 && <TrendingDown className="text-red-500" size={16} />}
                                         <span className={pct < 10 ? 'text-red-600 font-semibold' : 'text-gray-600'}>
-                                            {pct < 10 ? 'Today' : '3 Days'}
+                                            {depletionData[keg.keg_id] !== undefined && depletionData[keg.keg_id] !== null
+                                              ? `${depletionData[keg.keg_id]! < 1 
+                                                  ? '<1 day' 
+                                                  : `${Math.round(depletionData[keg.keg_id]!)} days`}`
+                                              : 'Calculating...'}
                                         </span>
                                     </div>
                                 </td>

@@ -10,6 +10,7 @@ interface Props {
 const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
   const [beer, setBeer] = useState('Hazy IPA');
   const [buckets, setBuckets] = useState<Array<{bucket_ts:number, volume_ml:number}>>([]);
+  const [efficiency, setEfficiency] = useState<number | null>(null);
 
   const [showRaw, setShowRaw] = useState(false);
 
@@ -27,6 +28,20 @@ const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
       })
       .catch(() => setBuckets([]));
   }, [beer]);
+
+  // Fetch efficiency data
+  useEffect(() => {
+    fetch('/api/efficiency')
+      .then(r => r.json())
+      .then(data => {
+        if (data.efficiency !== null && data.efficiency !== undefined) {
+          setEfficiency(parseFloat(data.efficiency));
+        } else {
+          setEfficiency(null);
+        }
+      })
+      .catch(() => setEfficiency(null));
+  }, []);
 
   const chartData = buckets.map(b => ({
     bucket_ts: b.bucket_ts,
@@ -132,19 +147,30 @@ const AnalyticsDashboard: React.FC<Props> = ({ history = [] }) => {
               <TrendingUp className="text-green-600" size={32} />
           </div>
           <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">System Efficiency</h3>
-          <div className="text-7xl font-bold text-gray-900 mb-4">98.5<span className="text-4xl text-gray-400">%</span></div>
-          <p className="text-gray-600 text-sm max-w-xs leading-relaxed">
-            Calculated based on flow-meter vs load-cell discrepancies over the last 24 hours.
-          </p>
-          <div className="mt-6 w-full max-w-xs">
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 rounded-full" style={{ width: '98.5%' }}></div>
+          {efficiency !== null ? (
+            <>
+              <div className="text-7xl font-bold text-gray-900 mb-4">{efficiency.toFixed(1)}<span className="text-4xl text-gray-400">%</span></div>
+              <p className="text-gray-600 text-sm max-w-xs leading-relaxed">
+                Calculated from flow-meter vs load-cell data over the last 24 hours.
+              </p>
+              <div className="mt-6 w-full max-w-xs">
+                  <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, efficiency)}%` }}></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 mt-2">
+                      <span>0%</span>
+                      <span>100%</span>
+                  </div>
               </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>0%</span>
-                  <span>100%</span>
-              </div>
-          </div>
+            </>
+          ) : (
+            <>
+              <div className="text-4xl font-bold text-gray-400 mb-4">N/A</div>
+              <p className="text-gray-500 text-sm max-w-xs leading-relaxed">
+                Insufficient telemetry data to calculate efficiency. Needs 24 hours of pour activity.
+              </p>
+            </>
+          )}
        </div>
     </div>
   );

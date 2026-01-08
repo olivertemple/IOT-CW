@@ -24,6 +24,12 @@ function resolveScriptPath(baseName) {
     return path.join(__dirname, baseName + '.js');
 }
 
+// Parse command-line arguments
+const args = process.argv.slice(2);
+const TAP_NAME = args.find(arg => arg.startsWith('--tap='))?.split('=')[1] || 'tap-01';
+
+console.log(`Starting SmartTap Dashboard for: ${TAP_NAME}`);
+
 // --- CONFIGURATION ---
 const KEGS = [
   { id: 'keg-A', vol: 1000 }, // Start low to test auto-swap quickly
@@ -141,11 +147,11 @@ function spawnProcess(label, cmd, args) {
 }
 
 // Start Simulations using robust path resolution (.cjs or .js)
-const valveProcess = spawnProcess('[VALVE]', 'node', [resolveScriptPath('sim_valve')]);
-const tapProcess = spawnProcess('[TAP]', 'node', [resolveScriptPath('sim_tap')]);
+const valveProcess = spawnProcess('[VALVE]', 'node', [resolveScriptPath('sim_valve'), TAP_NAME]);
+const tapProcess = spawnProcess('[TAP]', 'node', [resolveScriptPath('sim_tap'), TAP_NAME]);
 
 const kegProcesses = KEGS.map(k => {
-  return spawnProcess(`[${k.id}]`, 'node', [resolveScriptPath('sim_keg'), k.id, k.vol.toString()]);
+  return spawnProcess(`[${k.id}]`, 'node', [resolveScriptPath('sim_keg'), k.id, k.vol.toString(), TAP_NAME]);
 });
 
 // --- PARSING LOGIC ---

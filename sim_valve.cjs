@@ -1,8 +1,8 @@
 
 const mqtt = require('mqtt');
 
-// Configuration
-const SYSTEM_ID = 'tap-01';
+// Configuration - Accept tap name from command line
+const SYSTEM_ID = process.argv[2] || 'tap-01';
 const BROKER = 'mqtt://test.mosquitto.org';
 
 // Simulated Known Kegs (In a real system, these might be discovered or configured)

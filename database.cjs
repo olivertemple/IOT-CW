@@ -159,3 +159,86 @@ module.exports.getUsageRange = (beerName, startTs, endTs, callback) => {
     (err, rows) => callback(rows || [])
   );
 };
+
+// Calculate system efficiency based on telemetry data
+module.exports.calculateEfficiency = (callback) => {
+  const oneDayAgo = Date.now() - 24 * 3600000;
+  db.all(
+    `SELECT vol_remaining_ml, flow_lpm, timestamp FROM telemetry WHERE timestamp > ? ORDER BY timestamp`,
+    [oneDayAgo],
+    (err, rows) => {
+      if (err || !rows || rows.length < 2) {
+        callback(null);
+        return;
+      }
+      
+      // Calculate total expected volume from flow meter
+      let totalFlowVolume = 0;
+      let totalActualVolume = 0;
+      
+      for (let i = 1; i < rows.length; i++) {
+        const prev = rows[i - 1];
+        const curr = rows[i];
+        const timeDeltaSec = (curr.timestamp - prev.timestamp) / 1000;
+        const volumeDelta = Math.max(0, prev.vol_remaining_ml - curr.vol_remaining_ml);
+        
+        // Flow-based volume (flow_lpm * time_minutes)
+        const flowBasedVolume = (prev.flow_lpm * timeDeltaSec) / 60;
+        
+        totalFlowVolume += flowBasedVolume;
+        totalActualVolume += volumeDelta;
+      }
+      
+      if (totalFlowVolume === 0) {
+        callback(null);
+        return;
+      }
+      
+      // Efficiency = actual volume / flow meter volume * 100
+      const efficiency = Math.min(100, (totalActualVolume / totalFlowVolume) * 100);
+      callback(isNaN(efficiency) ? null : efficiency);
+    }
+  );
+};
+
+// Estimate depletion time for a keg based on usage patterns
+module.exports.estimateDepletion = (kegId, currentVolumeMl, callback) => {
+  const sevenDaysAgo = Date.now() - 7 * 24 * 3600000;
+  
+  // Get beer name for this keg
+  db.get(
+    `SELECT beer_name FROM inventory WHERE keg_id = ?`,
+    [kegId],
+    (err, row) => {
+      if (err || !row) {
+        callback(null);
+        return;
+      }
+      
+      const beerName = row.beer_name;
+      
+      // Calculate average daily consumption from usage_hourly
+      db.all(
+        `SELECT SUM(volume_ml) as total_volume FROM usage_hourly WHERE beer_name = ? AND bucket_ts > ?`,
+        [beerName, sevenDaysAgo],
+        (err, rows) => {
+          if (err || !rows || rows.length === 0 || !rows[0].total_volume) {
+            callback(null);
+            return;
+          }
+          
+          const totalVolume = rows[0].total_volume;
+          const avgDailyConsumption = totalVolume / 7; // ml per day
+          
+          if (avgDailyConsumption <= 0 || currentVolumeMl <= 0) {
+            callback(null);
+            return;
+          }
+          
+          const daysRemaining = currentVolumeMl / avgDailyConsumption;
+          callback(daysRemaining);
+        }
+      );
+    }
+  );
+};

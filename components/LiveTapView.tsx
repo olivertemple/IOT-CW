@@ -187,10 +187,7 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState }) => {
               </div>
             </div>
 
-            <div className="pt-6 border-t border-gray-200">
-              <div className="text-xs text-gray-500 font-medium mb-2">Location</div>
-              <div className="text-base font-semibold text-gray-900">Main Bar • Line A</div>
-            </div>
+
           </div>
         </div>
 
