@@ -1,12 +1,23 @@
-FROM node:20-alpine AS build
+FROM node:18-alpine AS build
 WORKDIR /app
 
 # Accept backend URL at build-time
 ARG VITE_BACKEND_URL
 ENV VITE_BACKEND_URL=${VITE_BACKEND_URL}
 
-# Copy everything including node_modules
+# Skip building sqlite3 (not needed for frontend)
+ENV SQLITE3_SKIP_BINARY_DOWNLOAD_FOR_CI=1
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+RUN npm config set strict-ssl false && npm ci --legacy-peer-deps --ignore-scripts && npm install react-is
+
+# Copy source code (node_modules excluded via .dockerignore)
 COPY . .
+
+# Build
 RUN npm run build
 
 FROM nginx:alpine AS prod
