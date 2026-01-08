@@ -81,12 +81,25 @@ const App: React.FC = () => {
         setAlert(data.msg);
         setTimeout(() => setAlert(null), UI_CONSTANTS.ALERT_DURATION_MS);
     });
+    
+    socket.on('tap_deleted', (data) => {
+      setAllTaps(prev => prev.filter(t => t.tapId !== data.tapId));
+      if (selectedTap === data.tapId) {
+        setSelectedTap(null);
+        setActiveView('taps');
+      }
+    });
 
     return () => {
       socket.off('connect');
       socket.off('disconnect');
       socket.off('tap_update');
       socket.off('keg_update');
+      socket.off('inventory_data');
+      socket.off('history_data');
+      socket.off('orders_data');
+      socket.off('alert');
+      socket.off('tap_deleted');
       disconnectSocket();
     };
   }, [selectedTap]);
