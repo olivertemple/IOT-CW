@@ -7,6 +7,16 @@ interface Props {
   orders: any[];
 }
 
+interface KegInventory {
+  keg_id: string;
+  beer_name: string;
+  volume_total_ml: number;
+  volume_remaining_ml: number;
+  status: string;
+  tap_id?: string;
+  last_updated: number;
+}
+
 const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
   const [depletionData, setDepletionData] = useState<Record<string, number | null>>({});
 
@@ -43,14 +53,14 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
   };
 
   // Group inventory by beer type/tap
-  const groupedInventory = inventory.reduce((acc, keg) => {
+  const groupedInventory = inventory.reduce((acc, keg: KegInventory) => {
     const beerName = keg.beer_name || 'Unknown Beer';
     if (!acc[beerName]) {
       acc[beerName] = [];
     }
     acc[beerName].push(keg);
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, KegInventory[]>);
 
   const beerTypes = Object.keys(groupedInventory).sort();
 

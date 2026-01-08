@@ -53,10 +53,18 @@ function initDb() {
     )`);
     
     // Add tap_id column if it doesn't exist (migration for existing databases)
-    db.run(`ALTER TABLE inventory ADD COLUMN tap_id TEXT`, (err) => {
-      // Ignore error if column already exists
-      if (err && !err.message.includes('duplicate column')) {
-        console.error('Error adding tap_id column:', err.message);
+    db.all(`PRAGMA table_info(inventory)`, [], (err, columns) => {
+      if (!err && columns) {
+        const hasTapId = columns.some((col: any) => col.name === 'tap_id');
+        if (!hasTapId) {
+          db.run(`ALTER TABLE inventory ADD COLUMN tap_id TEXT`, (alterErr) => {
+            if (alterErr) {
+              console.error('Error adding tap_id column:', alterErr.message);
+            } else {
+              console.log('Successfully added tap_id column to inventory table');
+            }
+          });
+        }
       }
     });
     // Orders

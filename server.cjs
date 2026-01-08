@@ -193,7 +193,8 @@ app.delete('/api/taps/:tapId', (req, res) => {
     // Delete all kegs associated with this tap from inventory
     db.deleteKegsByTap(tapId, (err) => {
       if (err) {
-        res.status(500).json({ error: 'Failed to delete kegs' });
+        console.error(`[API] Failed to delete kegs for tap ${tapId}:`, err.message);
+        res.status(500).json({ error: `Failed to delete kegs: ${err.message}` });
       } else {
         console.log(`[API] Deleted tap system and kegs: ${tapId}`);
         io.emit('tap_deleted', { tapId });
