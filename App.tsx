@@ -295,13 +295,16 @@ const App: React.FC = () => {
                   {isConnected ? 'Online' : 'Offline'}
                 </span>
               </div>
-              {allTaps.filter(t => t.isConnected).length > 0 && (
-                <div className="px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <span className="text-sm font-semibold text-indigo-700">
-                    {allTaps.filter(t => t.isConnected).length} {allTaps.filter(t => t.isConnected).length === 1 ? 'Tap' : 'Taps'} Connected
-                  </span>
-                </div>
-              )}
+              {(() => {
+                const connectedCount = allTaps.filter(t => t.isConnected).length;
+                return connectedCount > 0 ? (
+                  <div className="px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
+                    <span className="text-sm font-semibold text-indigo-700">
+                      {connectedCount} {connectedCount === 1 ? 'Tap' : 'Taps'} Connected
+                    </span>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </div>
         </header>
