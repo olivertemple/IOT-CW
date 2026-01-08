@@ -2,7 +2,7 @@ npm run dev to start frontend
 
 node ./server.cjs to start backend server
 
-node ./dashboard.cjs to start simulator
+node ./simulators/dashboard.cjs to start simulator
 
 currently uses mosquitto as mqtt broker
 
@@ -15,46 +15,46 @@ The system now supports multiple tap systems simultaneously with customizable be
 #### Basic Usage (Single Tap)
 ```bash
 # Default tap (tap-01) with Hazy IPA and default kegs
-node ./dashboard.cjs
+node ./simulators/dashboard.cjs
 ```
 
 #### Custom Tap Name
 ```bash
 # Second tap system
-node ./dashboard.cjs --tap=tap-02
+node ./simulators/dashboard.cjs --tap=tap-02
 
 # Third tap system
-node ./dashboard.cjs --tap=tap-03
+node ./simulators/dashboard.cjs --tap=tap-03
 ```
 
 #### Custom Beer Name
 ```bash
 # Tap serving Guinness
-node ./dashboard.cjs --tap=tap-01 --beer="Guinness Stout"
+node ./simulators/dashboard.cjs --tap=tap-01 --beer="Guinness Stout"
 
 # Tap serving Lager
-node ./dashboard.cjs --tap=tap-02 --beer="Pilsner Lager"
+node ./simulators/dashboard.cjs --tap=tap-02 --beer="Pilsner Lager"
 ```
 
 #### Custom Keg Configuration
 ```bash
 # Custom kegs: keg-ID:volume_ml (comma-separated)
-node ./dashboard.cjs --tap=tap-01 --beer="IPA" --kegs=keg-1:5000,keg-2:20000,keg-3:20000
+node ./simulators/dashboard.cjs --tap=tap-01 --beer="IPA" --kegs=keg-1:5000,keg-2:20000,keg-3:20000
 
 # Different beer and keg setup
-node ./dashboard.cjs --tap=tap-02 --beer="Stout" --kegs=keg-A:10000,keg-B:15000
+node ./simulators/dashboard.cjs --tap=tap-02 --beer="Stout" --kegs=keg-A:10000,keg-B:15000
 ```
 
 #### Complete Example
 ```bash
 # Terminal 1 - IPA tap with 3 kegs
-node ./dashboard.cjs --tap=tap-01 --beer="Hazy IPA" --kegs=keg-A:1000,keg-B:20000,keg-C:20000
+node ./simulators/dashboard.cjs --tap=tap-01 --beer="Hazy IPA" --kegs=keg-A:1000,keg-B:20000,keg-C:20000
 
 # Terminal 2 - Stout tap with 2 kegs
-node ./dashboard.cjs --tap=tap-02 --beer="Guinness" --kegs=keg-X:15000,keg-Y:20000
+node ./simulators/dashboard.cjs --tap=tap-02 --beer="Guinness" --kegs=keg-X:15000,keg-Y:20000
 
 # Terminal 3 - Lager tap
-node ./dashboard.cjs --tap=tap-03 --beer="Pilsner" --kegs=keg-1:20000,keg-2:20000
+node ./simulators/dashboard.cjs --tap=tap-03 --beer="Pilsner" --kegs=keg-1:20000,keg-2:20000
 ```
 
 The backend automatically discovers and tracks all tap systems when they start publishing MQTT messages.
