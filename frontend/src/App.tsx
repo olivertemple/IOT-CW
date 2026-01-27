@@ -69,7 +69,7 @@ const App: React.FC = () => {
   const connectedCount = allTaps.filter(t => t.isConnected).length;
 
   return (
-    <div className="min-h-screen bg-mist text-ink relative">
+    <div className="app-shell text-ink relative">
       <div className="app-noise" />
 
       <Sidebar
@@ -77,76 +77,71 @@ const App: React.FC = () => {
         isConnected={isConnected}
         onViewChange={setActiveView}
         onSettingsClick={() => setShowSettings(true)}
+        connectedCount={connectedCount}
       />
 
       {alert && <AlertToast message={alert} />}
 
-      <main className="ml-[120px] px-10 py-10 relative z-10">
-        <header className="mb-8">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center justify-between gap-6">
+      <main className="px-10 pb-16 pt-28 relative z-10 max-w-[1400px] mx-auto">
+        <header className="mb-10 animate-fadeUp">
+          <div className="flex flex-col gap-4">
+            <p className="text-xs uppercase tracking-[0.35em] text-ink/50">SmartBar Command Deck</p>
+            <div className="flex flex-wrap items-end justify-between gap-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-ink/50">SmartBar Control</p>
-                <h1 className="text-4xl font-display text-ink mt-2">
+                <h1 className="text-5xl font-display text-ink">
                   {activeView === 'taps' ? 'Tap Systems' :
                     activeView === 'dashboard' ? 'Live Pour Room' :
                       activeView === 'inventory' ? 'Keg Inventory' : 'Usage Analytics'}
                 </h1>
+                <p className="text-sm text-ink/60 mt-3 max-w-xl">
+                  Live operational visibility across taps, kegs, and flow health — designed for fast decisions in busy service windows.
+                </p>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2 px-4 py-2 bg-white border border-stone rounded-full text-sm font-semibold">
-                  <Circle className={`w-2 h-2 ${isConnected ? 'fill-pine text-pine' : 'fill-ember text-ember'}`} />
-                  {isConnected ? 'Online' : 'Offline'}
+              {selectedTap && activeView !== 'taps' && (
+                <div className="flex items-center gap-3 text-sm text-ink/70">
+                  <span className="px-3 py-1 rounded-full bg-white border border-stone">Active Tap</span>
+                  <span className="font-semibold">{selectedTap}</span>
                 </div>
-                {connectedCount > 0 && (
-                  <div className="px-4 py-2 bg-white border border-stone rounded-full text-sm font-semibold text-pine">
-                    {connectedCount} Tap{connectedCount === 1 ? '' : 's'} Connected
-                  </div>
-                )}
-              </div>
+              )}
             </div>
-            {selectedTap && activeView !== 'taps' && (
-              <div className="flex items-center gap-3 text-sm text-ink/70">
-                <span className="px-3 py-1 rounded-full bg-white border border-stone">Active Tap</span>
-                <span className="font-semibold">{selectedTap}</span>
-              </div>
-            )}
           </div>
         </header>
 
-        {activeView === 'taps' && (
-          <TapsOverview
-            taps={allTaps}
-            onTapSelect={handleTapSelect}
-            onTapDelete={handleDeleteTap}
-          />
-        )}
+        <section className="space-y-10">
+          {activeView === 'taps' && (
+            <TapsOverview
+              taps={allTaps}
+              onTapSelect={handleTapSelect}
+              onTapDelete={handleDeleteTap}
+            />
+          )}
 
-        {activeView === 'dashboard' && selectedTap && (
-          <DashboardView
-            allTaps={allTaps}
-            selectedTap={selectedTap}
-            tapState={tapState}
-            kegState={kegState}
-            onTapChange={(tapId) => {
-              setSelectedTap(tapId);
-              const tap = allTaps.find(t => t.tapId === tapId);
-              if (tap) {
-                setTapState(tap.tap);
-                setKegState(tap.activeKeg);
-              }
-            }}
-            onBackToTaps={() => setActiveView('taps')}
-          />
-        )}
+          {activeView === 'dashboard' && selectedTap && (
+            <DashboardView
+              allTaps={allTaps}
+              selectedTap={selectedTap}
+              tapState={tapState}
+              kegState={kegState}
+              onTapChange={(tapId) => {
+                setSelectedTap(tapId);
+                const tap = allTaps.find(t => t.tapId === tapId);
+                if (tap) {
+                  setTapState(tap.tap);
+                  setKegState(tap.activeKeg);
+                }
+              }}
+              onBackToTaps={() => setActiveView('taps')}
+            />
+          )}
 
-        {activeView === 'inventory' && (
-          <InventoryManager inventory={inventory} orders={orders} />
-        )}
+          {activeView === 'inventory' && (
+            <InventoryManager inventory={inventory} orders={orders} />
+          )}
 
-        {activeView === 'analytics' && (
-          <AnalyticsDashboard history={history} />
-        )}
+          {activeView === 'analytics' && (
+            <AnalyticsDashboard history={history} />
+          )}
+        </section>
       </main>
 
       <SettingsModal

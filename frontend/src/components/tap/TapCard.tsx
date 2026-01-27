@@ -16,20 +16,20 @@ const TapCard: React.FC<TapCardProps> = ({ tap, onSelect, onDelete }) => {
   const temp = kegData.temp || 4.0;
 
   return (
-    <div className="glass-panel rounded-[28px] p-6 relative hover:-translate-y-1 transition-all duration-200">
+    <div className="glass-panel rounded-[30px] p-6 relative hover:-translate-y-1 transition-all duration-200">
       <button
         onClick={(e) => {
           e.stopPropagation();
           onDelete(tap.tapId);
         }}
-        className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white border border-stone flex items-center justify-center text-ember hover:text-ink transition-colors z-10"
+        className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white border border-stone flex items-center justify-center text-ember hover:text-ink transition-colors z-10"
         title="Disconnect tap"
       >
         <X size={16} />
       </button>
 
-      <div onClick={onSelect} className="cursor-pointer">
-        <div className="flex items-center justify-between mb-5">
+      <div onClick={onSelect} className="cursor-pointer space-y-5">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-ink text-white flex items-center justify-center icon-ring">
               <Beer size={22} />
@@ -49,9 +49,9 @@ const TapCard: React.FC<TapCardProps> = ({ tap, onSelect, onDelete }) => {
           }`}></div>
         </div>
 
-        <div className="mb-5">
-          <div className="text-xs uppercase tracking-[0.3em] text-ink/50 mb-2">Current Pour</div>
-          <div className="text-xl font-display text-ink">{tapData.beer_name || 'No Keg'}</div>
+        <div>
+          <div className="text-xs uppercase tracking-[0.3em] text-ink/50">Current Pour</div>
+          <div className="text-2xl font-display text-ink mt-2">{tapData.beer_name || 'No Keg'}</div>
         </div>
 
         <div className="grid grid-cols-3 gap-3 text-center">
@@ -81,7 +81,7 @@ const TapCard: React.FC<TapCardProps> = ({ tap, onSelect, onDelete }) => {
           </div>
         </div>
 
-        <div className="mt-5 pt-4 border-t border-stone text-sm text-pine font-semibold">View Details →</div>
+        <div className="pt-2 text-sm text-pine font-semibold">View Details →</div>
       </div>
     </div>
   );

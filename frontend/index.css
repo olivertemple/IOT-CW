@@ -8,9 +8,9 @@
 
 body {
   margin: 0;
-  font-family: 'Sora', system-ui, sans-serif;
-  background: #f6f4ef;
-  color: #1f1c18;
+  font-family: 'Manrope', system-ui, sans-serif;
+  background: #fbf7f0;
+  color: #171413;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -24,26 +24,34 @@ body {
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(circle at 15% 20%, rgba(47, 111, 100, 0.12), transparent 35%),
-    radial-gradient(circle at 85% 15%, rgba(197, 106, 63, 0.12), transparent 30%),
-    radial-gradient(circle at 50% 80%, rgba(0, 0, 0, 0.06), transparent 45%);
+    radial-gradient(circle at 12% 18%, rgba(210, 125, 75, 0.18), transparent 40%),
+    radial-gradient(circle at 78% 10%, rgba(47, 123, 120, 0.18), transparent 35%),
+    radial-gradient(circle at 50% 85%, rgba(15, 15, 14, 0.08), transparent 45%);
   mix-blend-mode: multiply;
   z-index: 0;
 }
 
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.8), transparent 40%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(239, 231, 219, 0.6));
+}
+
 .glass-panel {
-  background: rgba(255, 255, 255, 0.76);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(231, 226, 217, 0.9);
-  box-shadow: 0 18px 40px rgba(28, 27, 25, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(229, 219, 206, 0.9);
+  box-shadow: 0 18px 45px rgba(20, 18, 16, 0.12);
 }
 
 .soft-shadow {
-  box-shadow: 0 18px 40px rgba(28, 27, 25, 0.08);
+  box-shadow: 0 18px 40px rgba(20, 18, 16, 0.12);
 }
 
 .icon-ring {
-  box-shadow: inset 0 0 0 1px rgba(47, 111, 100, 0.18), 0 8px 20px rgba(47, 111, 100, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(210, 125, 75, 0.2), 0 12px 25px rgba(47, 123, 120, 0.18);
 }
 
 .scrollbar::-webkit-scrollbar {
@@ -52,17 +60,17 @@ body {
 }
 
 .scrollbar::-webkit-scrollbar-track {
-  background: #eee9df;
+  background: #efe7db;
   border-radius: 999px;
 }
 
 .scrollbar::-webkit-scrollbar-thumb {
-  background: #c9c0b3;
+  background: #cbbfb0;
   border-radius: 999px;
 }
 
 .scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #b7ad9f;
+  background: #b7aa98;
 }
 
 @keyframes floaty {
@@ -96,7 +104,7 @@ body {
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-12px);
   }
   to {
     opacity: 1;
@@ -105,5 +113,20 @@ body {
 }
 
 .animate-slideDown {
-  animation: slideDown 0.3s ease;
+  animation: slideDown 0.35s ease;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeUp {
+  animation: fadeUp 0.45s ease;
 }
