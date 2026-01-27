@@ -9,7 +9,25 @@ interface FlowChartProps {
   tickMs?: number;
 }
 
-const FlowChart: React.FC<FlowChartProps> = ({ flow, width = 380, height = 180, maxPoints = 60, maxFlow = 10, tickMs = 500 }) => {
+const FlowChart: React.FC<FlowChartProps> = ({ flow, width, height = 180, maxPoints = 60, maxFlow = 10, tickMs = 500 }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
+
+  // measure container when mounted and on resize
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+    const obs = new ResizeObserver(() => {
+      const w = Math.floor(node.getBoundingClientRect().width);
+      setMeasuredWidth(w);
+    });
+    obs.observe(node);
+    // initial
+    setMeasuredWidth(Math.floor(node.getBoundingClientRect().width));
+    return () => obs.disconnect();
+  }, []);
+
+  const effectiveWidth = width || measuredWidth || 380;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [points, setPoints] = useState<number[]>([]);
   const latestRef = useRef<number>(Number.isFinite(flow) ? flow : 0);
@@ -36,9 +54,10 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width = 380, height = 180, 
     const canvas = canvasRef.current;
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
+    const w = effectiveWidth;
+    canvas.width = w * dpr;
     canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
+    canvas.style.width = `${w}px`;
     canvas.style.height = `${height}px`;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -116,10 +135,10 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width = 380, height = 180, 
     ctx.fillText(`${maxFlow.toFixed(0)} L/min`, width - 4, 12);
     ctx.fillText('0 L/min', width - 4, height - 4);
 
-  }, [points, width, height, maxPoints, maxFlow]);
+  }, [points, effectiveWidth, height, maxPoints, maxFlow]);
 
   return (
-    <div className="flow-chart">
+    <div ref={containerRef} className="flow-chart w-full">
       <canvas ref={canvasRef} />
     </div>
   );
