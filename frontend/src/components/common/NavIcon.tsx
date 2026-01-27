@@ -14,7 +14,7 @@ const NavIcon: React.FC<NavIconProps> = ({ icon, label, active, onClick }) => {
     // If icon is a React element, clone it with adjusted className
     if (React.isValidElement(icon)) {
       const existing = (icon as any).props.className || '';
-      const colorClass = active ? 'text-white' : 'text-ink/60';
+      const colorClass = active ? 'text-ink' : 'text-ink/60';
       renderedIcon = React.cloneElement(icon as React.ReactElement, { className: `${existing} ${colorClass}`.trim() });
     } else {
       renderedIcon = icon;
@@ -35,7 +35,7 @@ const NavIcon: React.FC<NavIconProps> = ({ icon, label, active, onClick }) => {
       aria-pressed={active}
     >
       {renderedIcon}
-      <span className={active ? 'text-white' : ''}>{label}</span>
+      <span>{label}</span>
     </button>
   );
 };
