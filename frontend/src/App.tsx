@@ -87,9 +87,7 @@ const App: React.FC = () => {
             <div className="flex flex-wrap items-end justify-between gap-6">
               <div>
                 <h1 className="text-5xl font-display text-ink">
-                  {activeView === 'taps' ? 'Tap Systems' :
-                    activeView === 'dashboard' ? 'Live Pour Room' :
-                      activeView === 'inventory' ? 'Keg Inventory' : 'Usage Analytics'}
+                  {selectedTap ? selectedTap : ''}
                 </h1>
               </div>
               {selectedTap && activeView !== 'taps' && (
