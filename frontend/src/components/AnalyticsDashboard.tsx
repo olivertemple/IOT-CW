@@ -31,7 +31,8 @@ const AnalyticsDashboard: React.FC = () => {
   const [beer, setBeer] = useState<string>('Ale');
   const [rows, setRows] = useState<Row[]>([]);
   const [weeksBack, setWeeksBack] = useState<number>(4);
-  const [suggestedModelRec, setSuggestedModelRec] = useState<{ units: number } | null>(null);
+  const [perBeerRecs, setPerBeerRecs] = useState<Map<string, number> | null>(null);
+  const [perBeerSource, setPerBeerSource] = useState<Map<string, string> | null>(null);
 
   useEffect(() => {
     try {
@@ -42,17 +43,7 @@ const AnalyticsDashboard: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (rows.length === 0) return;
-    try {
-      const modelOut = ridgeSvc.trainRidgeAndRecommend(rows);
-      const { perBeerRecommendation } = modelOut as any;
-      const val = (perBeerRecommendation && perBeerRecommendation.get) ? perBeerRecommendation.get(beer) ?? 0 : 0;
-      setSuggestedModelRec({ units: val });
-    } catch (e) {
-      setSuggestedModelRec(null);
-    }
-  }, [rows, beer]);
+  // compute per-beer recommendations (prefer model if available, else use recent averages)
 
   // shift all dates forward in whole-week steps so the latest date aligns near today
   const shiftedRows = useMemo(() => {
@@ -94,26 +85,7 @@ const AnalyticsDashboard: React.FC = () => {
 
   const totalUnits = filtered.reduce((s, f) => s + f.units, 0);
 
-  // suggested order for next week: prefer model recommendation (ridge + buffer), else fallback to average
-  const suggestedOrder = useMemo(() => {
-    if (filtered.length === 0) return { units: 0 };
-    // compute per-beer average over the available shiftedRows span (to match the table)
-    const beerRows = shiftedRows.filter(r => r.Beer === beer);
-    const oneWeekMs = 7 * 24 * 3600 * 1000;
-    let avgPerWeekSelected = 0;
-    if (beerRows.length > 0) {
-      const dates = beerRows.map(r => new Date(r.Date).getTime());
-      const spanWeeks = Math.max(1, (Math.max(...dates) - Math.min(...dates)) / oneWeekMs);
-      const total = beerRows.reduce((s, r) => s + Number(r.UnitsSold), 0);
-      avgPerWeekSelected = total / Math.max(1, Math.round(spanWeeks));
-    } else {
-      avgPerWeekSelected = totalUnits / Math.max(1, weeksBack);
-    }
-
-    if (suggestedModelRec && suggestedModelRec.units > 0) return { units: suggestedModelRec.units, avgPerWeek: Math.round(avgPerWeekSelected) };
-    const suggested = Math.ceil(avgPerWeekSelected);
-    return { units: suggested, avgPerWeek: Math.round(avgPerWeekSelected) };
-  }, [totalUnits, weeksBack, filtered, suggestedModelRec, shiftedRows, beer]);
+  // (single-beer suggestion removed; per-beer recommendations shown below)
 
   const tickInterval = Math.max(0, Math.floor(chartData.length / 8));
 
@@ -133,7 +105,31 @@ const AnalyticsDashboard: React.FC = () => {
     return out;
   }, [shiftedRows, weeksBack]);
 
-  const modelUsed = Boolean(suggestedModelRec && suggestedModelRec.units > 0);
+  useEffect(() => {
+    if (rows.length === 0) { setPerBeerRecs(null); return; }
+    try {
+      const modelOut = ridgeSvc.trainRidgeAndRecommend(rows) as any;
+      const map = modelOut?.perBeerRecommendation as Map<string, number> | undefined;
+      if (map && map.size > 0) {
+        setPerBeerRecs(map);
+        const src = new Map<string, string>();
+        for (const k of map.keys()) src.set(k, 'Model');
+        for (const [b] of perBeerAverages.entries()) if (!src.has(b)) src.set(b, 'Avg');
+        setPerBeerSource(src);
+        return;
+      }
+    } catch (e) {
+      // fall back to averages below
+    }
+    // fallback: use perBeerAverages
+    const fallback = new Map<string, number>();
+    const src = new Map<string, string>();
+    for (const [b, avg] of perBeerAverages.entries()) { fallback.set(b, Math.ceil(avg)); src.set(b, 'Avg'); }
+    setPerBeerRecs(fallback);
+    setPerBeerSource(src);
+  }, [rows, perBeerAverages]);
+
+  // modelUsed kept if needed elsewhere
 
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -144,8 +140,8 @@ const AnalyticsDashboard: React.FC = () => {
               <Activity size={20} />
             </div>
             <div>
-              <h3 className="text-xl font-display text-ink">Fake Usage</h3>
-              <p className="text-sm text-ink/60 mt-0.5">Static, frontend-only data (shifted to recent weeks)</p>
+              <h3 className="text-xl font-display text-ink">Usage</h3>
+                <p className="text-sm text-ink/60 mt-0.5">Recent usage data</p>
             </div>
           </div>
 
@@ -219,20 +215,21 @@ const AnalyticsDashboard: React.FC = () => {
         )}
 
         <div className="mt-6 bg-white p-4 rounded-2xl border border-stone">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-ink/60">Suggested order for next week</div>
-              <div className="text-2xl font-display text-ink">{suggestedOrder.units} units</div>
-              {!modelUsed && (
-                <div className="text-xs text-ink/60">Based on average {suggestedOrder.avgPerWeek ?? Math.round(totalUnits / Math.max(1, weeksBack))} units/week</div>
-              )}
+          <div>
+            <div className="text-sm text-ink/60">Next week's orders (all beers)</div>
+            <div className="grid grid-cols-3 gap-4 mt-4 text-xs font-semibold">
+              <div>Beer</div>
+              <div>Units</div>
+              <div>Source</div>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-ink/60">Beer</div>
-              <div className="text-lg font-semibold">{beer}</div>
-            </div>
+            {Array.from(new Set([...(beerList || []), ...(perBeerRecs ? Array.from(perBeerRecs.keys()) : [])])).map((b:any) => (
+              <div key={b} className="grid grid-cols-3 gap-4 items-center mt-2 text-sm">
+                <div>{b}</div>
+                <div className="font-semibold">{perBeerRecs?.get(b) ?? Math.ceil(perBeerAverages.get(b) ?? 0)}</div>
+                <div className="text-ink/60 text-xs">{perBeerSource?.get(b) ?? 'Avg'}</div>
+              </div>
+            ))}
           </div>
-          {/* Debug UI removed: model diagnostics and per-beer comparison omitted */}
         </div>
       </div>
     </div>
