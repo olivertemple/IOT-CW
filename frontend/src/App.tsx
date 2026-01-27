@@ -19,15 +19,13 @@ const App: React.FC = () => {
   const [selectedTap, setSelectedTap] = useState<string | null>(null);
   const [tapState, setTapState] = useState<any>(null);
   const [kegState, setKegState] = useState<any>(null);
-  
-  // Custom hooks for data management
+
   const { socket, isConnected } = useSocketConnection();
   const allTaps = useTapData(socket, isConnected);
   const { inventory, orders } = useInventoryData(socket, isConnected);
   const history = useHistoryData(socket);
   const { alert, showAlert } = useAlerts(socket);
 
-  // Keep selected tap's detailed state in sync
   useEffect(() => {
     if (!selectedTap) return;
     const found = allTaps.find(t => t.tapId === selectedTap);
@@ -37,7 +35,6 @@ const App: React.FC = () => {
     }
   }, [selectedTap, allTaps]);
 
-  // Auto-select first tap if none selected
   useEffect(() => {
     if (!selectedTap && allTaps.length > 0) {
       setSelectedTap(allTaps[0].tapId);
@@ -53,7 +50,7 @@ const App: React.FC = () => {
 
   const handleDeleteTap = (tapId: string) => {
     if (!confirm(`Are you sure you want to disconnect tap "${tapId}"?`)) return;
-    
+
     fetch(`${BACKEND_URL}/api/taps/${tapId}`, { method: 'DELETE' })
       .then(res => res.json())
       .then(() => {
@@ -72,7 +69,9 @@ const App: React.FC = () => {
   const connectedCount = allTaps.filter(t => t.isConnected).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="min-h-screen bg-mist text-ink relative">
+      <div className="app-noise" />
+
       <Sidebar
         activeView={activeView}
         isConnected={isConnected}
@@ -82,36 +81,39 @@ const App: React.FC = () => {
 
       {alert && <AlertToast message={alert} />}
 
-      <main className="ml-20 p-8">
-        {/* Header */}
+      <main className="ml-[120px] px-10 py-10 relative z-10">
         <header className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                {activeView === 'taps' ? 'All Tap Systems' : 
-                 activeView === 'dashboard' ? 'Live Dashboard' : 
-                 activeView === 'inventory' ? 'Stock Management' : 'Analytics'}
-              </h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="px-4 py-2 bg-white border border-gray-200 rounded-lg flex items-center gap-2">
-                <Circle className={`w-2 h-2 ${isConnected ? 'fill-green-500 text-green-500' : 'fill-red-500 text-red-500'}`} />
-                <span className="text-sm font-medium text-gray-700">
-                  {isConnected ? 'Online' : 'Offline'}
-                </span>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-6">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-ink/50">SmartBar Control</p>
+                <h1 className="text-4xl font-display text-ink mt-2">
+                  {activeView === 'taps' ? 'Tap Systems' :
+                    activeView === 'dashboard' ? 'Live Pour Room' :
+                      activeView === 'inventory' ? 'Keg Inventory' : 'Usage Analytics'}
+                </h1>
               </div>
-              {connectedCount > 0 && (
-                <div className="px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <span className="text-sm font-semibold text-indigo-700">
-                    {connectedCount} {connectedCount === 1 ? 'Tap' : 'Taps'} Connected
-                  </span>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 px-4 py-2 bg-white border border-stone rounded-full text-sm font-semibold">
+                  <Circle className={`w-2 h-2 ${isConnected ? 'fill-pine text-pine' : 'fill-ember text-ember'}`} />
+                  {isConnected ? 'Online' : 'Offline'}
                 </div>
-              )}
+                {connectedCount > 0 && (
+                  <div className="px-4 py-2 bg-white border border-stone rounded-full text-sm font-semibold text-pine">
+                    {connectedCount} Tap{connectedCount === 1 ? '' : 's'} Connected
+                  </div>
+                )}
+              </div>
             </div>
+            {selectedTap && activeView !== 'taps' && (
+              <div className="flex items-center gap-3 text-sm text-ink/70">
+                <span className="px-3 py-1 rounded-full bg-white border border-stone">Active Tap</span>
+                <span className="font-semibold">{selectedTap}</span>
+              </div>
+            )}
           </div>
         </header>
 
-        {/* Views */}
         {activeView === 'taps' && (
           <TapsOverview
             taps={allTaps}
