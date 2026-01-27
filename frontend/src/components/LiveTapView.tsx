@@ -18,7 +18,7 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true }
   const flow = kegState?.flow || 0;
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[480px_minmax(420px,1fr)] gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-1 gap-6 max-w-[1400px] mx-auto">
       <div className="glass-panel rounded-[32px] p-8 relative overflow-hidden">
         <div className="flex items-center justify-between mb-8">
           <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${
