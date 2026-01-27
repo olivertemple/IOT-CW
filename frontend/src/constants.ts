@@ -2,11 +2,11 @@
 import { DocCategory, DocSection, Scenario } from './types';
 
 // Allow overriding at build time via Vite env var `VITE_BACKEND_URL`.
-// If not provided, resolve at runtime in the browser to the current host
-// (so the client connects to the host where Docker maps the backend port).
+// If not provided, use a relative path `/api` so the frontend talks to
+// the backend through the same origin (nginx proxy). This avoids hard-
+// coding a host:port like :3001 which breaks when serving the site remotely.
 const envUrl = (import.meta.env && import.meta.env.VITE_BACKEND_URL) as string | undefined;
-const runtimeUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3001` : 'http://localhost:3001';
-export const BACKEND_URL = envUrl || runtimeUrl;
+export const BACKEND_URL = envUrl || '/api';
 
 // UI Configuration Constants
 export const UI_CONSTANTS = {

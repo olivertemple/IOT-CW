@@ -6,8 +6,6 @@ services:
       dockerfile: Dockerfile.backend
     volumes:
       - smartbar_data:/data
-    ports:
-      - "3001:3001"
     restart: unless-stopped
 
   frontend:
