@@ -67,7 +67,7 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width = 380, height = 180, 
     const usedPoints = points.slice(-maxPoints);
 
     // draw filled area
-    const step = width / (maxPoints - 1 || 1);
+    const step = width / (Math.max(usedPoints.length - 1, 1));
     ctx.beginPath();
     for (let i = 0; i < usedPoints.length; i++) {
       const x = i * step;
