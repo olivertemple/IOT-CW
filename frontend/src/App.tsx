@@ -84,7 +84,6 @@ const App: React.FC = () => {
       <main className="px-10 pb-16 pt-28 relative z-10 max-w-[1400px] mx-auto">
         <header className="mb-10 animate-fadeUp">
           <div className="flex flex-col gap-4">
-            <p className="text-xs uppercase tracking-[0.35em] text-ink/50">SmartBar Command Deck</p>
             <div className="flex flex-wrap items-end justify-between gap-6">
               <div>
                 <h1 className="text-5xl font-display text-ink">

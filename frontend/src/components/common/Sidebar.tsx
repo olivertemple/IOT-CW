@@ -16,7 +16,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, isConnected, onViewChange
       <div className="flex flex-wrap items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-ink text-white flex items-center justify-center shadow-lg">
-            <Beer size={24} />
+            <Beer size={24} className="fill-black" />
           </div>
           <div>
             <div className="text-[11px] uppercase tracking-[0.35em] text-ink/60">SmartBar OS</div>

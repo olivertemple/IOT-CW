@@ -32,7 +32,7 @@ const TapCard: React.FC<TapCardProps> = ({ tap, onSelect, onDelete }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-ink text-white flex items-center justify-center icon-ring">
-              <Beer size={22} />
+              <Beer size={22} className="fill-black" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-ink">{tap.tapId}</h3>

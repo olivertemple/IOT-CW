@@ -27,7 +27,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   const isConnected = allTaps.find(t => t.tapId === selectedTap)?.isConnected || false;
 
   return (
-    <div className="grid grid-cols-1 gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-6">
       <aside className="space-y-6">
         <div className="glass-panel rounded-[24px] p-5">
           <div className="mt-2">
