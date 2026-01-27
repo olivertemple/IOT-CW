@@ -33,8 +33,8 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true }
         <div className="flex flex-col lg:flex-row items-start justify-between gap-10">
           <div className="flex-shrink-0">
             <div className="relative">
-              <div className="w-full max-w-[520px]">
-                <FlowChart flow={flow} width={520} height={180} maxPoints={80} maxFlow={UI_CONSTANTS.MAX_FLOW_RATE_LPM} />
+              <div className="w-full">
+                <FlowChart flow={flow} height={180} maxPoints={80} maxFlow={UI_CONSTANTS.MAX_FLOW_RATE_LPM} />
               </div>
 
               <div className="mt-4 text-center">
