@@ -12,61 +12,67 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeView, isConnected, onViewChange, onSettingsClick, connectedCount }) => {
   return (
-    <header className="fixed top-6 left-1/2 -translate-x-1/2 w-full max-w-[1400px] glass-panel rounded-[28px] px-8 py-4 z-50">
-      <div className="flex flex-wrap items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-ink text-white flex items-center justify-center shadow-lg">
-            <Beer size={24} className="fill-black" />
-          </div>
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.35em] text-ink/60">SmartBar OS</div>
-            <div className="text-lg font-display text-ink">Control Suite</div>
-          </div>
-        </div>
-
-        <nav className="flex flex-wrap items-center gap-3">
-          <NavIcon
-            icon={<Activity size={18} />}
-            label="Taps"
-            active={activeView === 'taps'}
-            onClick={() => onViewChange('taps')}
-          />
-          <NavIcon
-            icon={<Sparkles size={18} />}
-            label="Live"
-            active={activeView === 'dashboard'}
-            onClick={() => onViewChange('dashboard')}
-          />
-          <NavIcon
-            icon={<Package size={18} />}
-            label="Stock"
-            active={activeView === 'inventory'}
-            onClick={() => onViewChange('inventory')}
-          />
-          <NavIcon
-            icon={<BarChart3 size={18} />}
-            label="Usage"
-            active={activeView === 'analytics'}
-            onClick={() => onViewChange('analytics')}
-          />
-        </nav>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 bg-white border border-stone rounded-full text-sm font-semibold">
-            <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-pine pulse-dot' : 'bg-ember'}`}></span>
-            {isConnected ? 'Online' : 'Offline'}
-          </div>
-          {connectedCount > 0 && (
-            <div className="px-4 py-2 bg-white border border-stone rounded-full text-sm font-semibold text-pine">
-              {connectedCount} Tap{connectedCount === 1 ? '' : 's'} Connected
+    <header className="fixed top-0 left-0 right-0 w-full glass-panel border-b border-white/10 z-50">
+      <div className="max-w-[1600px] mx-auto px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-amber to-accent-gold text-dark-950 flex items-center justify-center shadow-lg">
+              <Beer size={24} className="fill-current" />
             </div>
-          )}
-          <button
-            onClick={onSettingsClick}
-            className="w-11 h-11 rounded-2xl bg-ink text-white hover:bg-night transition-all"
-          >
-            <Settings size={18} />
-          </button>
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.4em] text-white/50 font-semibold">SmartBar OS</div>
+              <div className="text-xl font-display text-white font-bold">Tap Control</div>
+            </div>
+          </div>
+
+          <nav className="flex flex-wrap items-center gap-2">
+            <NavIcon
+              icon={<Activity size={20} />}
+              label="Taps"
+              active={activeView === 'taps'}
+              onClick={() => onViewChange('taps')}
+            />
+            <NavIcon
+              icon={<Sparkles size={20} />}
+              label="Live"
+              active={activeView === 'dashboard'}
+              onClick={() => onViewChange('dashboard')}
+            />
+            <NavIcon
+              icon={<Package size={20} />}
+              label="Stock"
+              active={activeView === 'inventory'}
+              onClick={() => onViewChange('inventory')}
+            />
+            <NavIcon
+              icon={<BarChart3 size={20} />}
+              label="Usage"
+              active={activeView === 'analytics'}
+              onClick={() => onViewChange('analytics')}
+            />
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border ${
+              isConnected 
+                ? 'bg-accent-green/20 border-accent-green/30 text-accent-green' 
+                : 'bg-accent-red/20 border-accent-red/30 text-accent-red'
+            }`}>
+              <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-accent-green pulse-dot' : 'bg-accent-red'}`}></span>
+              {isConnected ? 'Online' : 'Offline'}
+            </div>
+            {connectedCount > 0 && (
+              <div className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-sm font-bold text-accent-gold">
+                {connectedCount} Active
+              </div>
+            )}
+            <button
+              onClick={onSettingsClick}
+              className="w-11 h-11 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all flex items-center justify-center"
+            >
+              <Settings size={20} />
+            </button>
+          </div>
         </div>
       </div>
     </header>

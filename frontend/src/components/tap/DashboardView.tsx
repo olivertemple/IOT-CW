@@ -1,5 +1,5 @@
 import React from 'react';
-import { Beer, BarChart3, Package } from 'lucide-react';
+import { Beer, BarChart3, Package, ArrowLeft } from 'lucide-react';
 import LiveTapView from '../LiveTapView';
 import { UI_CONSTANTS } from '../../constants';
 
@@ -27,66 +27,65 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   const isConnected = allTaps.find(t => t.tapId === selectedTap)?.isConnected || false;
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-6">
       <aside className="space-y-6">
-        <div className="glass-panel rounded-[24px] p-5">
-          <div className="mt-2">
-            <button
-              onClick={onBackToTaps}
-              className="px-4 py-3 rounded-2xl bg-white border border-stone text-ink text-sm font-semibold transition-all"
-            >
-              ← Back
-            </button>
-          </div>
+        <div className="glass-panel rounded-xl p-5 border border-white/10">
+          <button
+            onClick={onBackToTaps}
+            className="w-full px-4 py-3 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-bold transition-all flex items-center justify-center gap-2"
+          >
+            <ArrowLeft size={18} />
+            Back to All Taps
+          </button>
         </div>
 
-        <div className="glass-panel rounded-[24px] p-5 space-y-4">
-          <div className="text-xs uppercase tracking-[0.3em] text-ink/50">Service Snapshot</div>
+        <div className="glass-panel rounded-xl p-5 space-y-4 border border-white/10">
+          <div className="text-xs uppercase tracking-[0.4em] text-white/50 font-bold">Live Metrics</div>
           <div className="grid gap-3">
-            <div className="rounded-2xl border border-stone bg-white p-4">
+            <div className="rounded-xl border border-white/20 bg-white/5 p-4 hover:bg-white/10 transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-ink text-white flex items-center justify-center">
-                  <Beer size={18} />
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-accent-amber to-accent-gold text-dark-950 flex items-center justify-center">
+                  <Beer size={20} />
                 </div>
-                <div>
-                  <div className="text-xs uppercase tracking-[0.2em] text-ink/50">Now Serving</div>
-                  <div className="text-lg font-display text-ink">{tapState?.beer_name || 'No Keg'}</div>
+                <div className="flex-1">
+                  <div className="text-xs uppercase tracking-[0.25em] text-white/50 font-semibold">Now Serving</div>
+                  <div className="text-lg font-display text-white font-bold mt-1">{tapState?.beer_name || 'No Keg'}</div>
                 </div>
               </div>
             </div>
 
-            <div className={`rounded-2xl border p-4 ${isPouring ? 'bg-pine/10 border-pine/30' : 'bg-white border-stone'}`}>
+            <div className={`rounded-xl border p-4 transition-all ${isPouring ? 'bg-accent-green/20 border-accent-green/40 glow-green' : 'bg-white/5 border-white/20'}`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isPouring ? 'bg-pine text-white' : 'bg-ink/10 text-ink'}`}>
-                  <BarChart3 size={18} />
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isPouring ? 'bg-accent-green text-dark-950' : 'bg-white/10 text-white'}`}>
+                  <BarChart3 size={20} />
                 </div>
-                <div>
-                  <div className="text-xs uppercase tracking-[0.2em] text-ink/50">Flow Rate</div>
-                  <div className="text-2xl font-semibold text-ink">{flow.toFixed(1)} LPM</div>
+                <div className="flex-1">
+                  <div className="text-xs uppercase tracking-[0.25em] text-white/50 font-semibold">Flow Rate</div>
+                  <div className="text-2xl font-bold text-white mt-1">{flow.toFixed(1)} <span className="text-base">LPM</span></div>
                 </div>
               </div>
             </div>
 
-            <div className={`rounded-2xl border p-4 ${temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'bg-ember/10 border-ember/30' : 'bg-white border-stone'}`}>
+            <div className={`rounded-xl border p-4 transition-all ${temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'bg-accent-red/20 border-accent-red/40' : 'bg-white/5 border-white/20'}`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'bg-ember text-white' : 'bg-ink/10 text-ink'}`}>
-                  <Beer size={18} />
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'bg-accent-red text-white' : 'bg-white/10 text-white'}`}>
+                  <Beer size={20} />
                 </div>
-                <div>
-                  <div className="text-xs uppercase tracking-[0.2em] text-ink/50">Temperature</div>
-                  <div className="text-2xl font-semibold text-ink">{temp.toFixed(1)}°C</div>
+                <div className="flex-1">
+                  <div className="text-xs uppercase tracking-[0.25em] text-white/50 font-semibold">Temperature</div>
+                  <div className="text-2xl font-bold text-white mt-1">{temp.toFixed(1)}<span className="text-base">°C</span></div>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-stone bg-white p-4">
+            <div className="rounded-xl border border-white/20 bg-white/5 p-4 hover:bg-white/10 transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-ink text-white flex items-center justify-center">
-                  <Package size={18} />
+                <div className="w-12 h-12 rounded-lg bg-white/10 text-white flex items-center justify-center">
+                  <Package size={20} />
                 </div>
-                <div>
-                  <div className="text-xs uppercase tracking-[0.2em] text-ink/50">Active Keg</div>
-                  <div className="text-2xl font-semibold text-ink font-mono">{kegState?.id || '---'}</div>
+                <div className="flex-1">
+                  <div className="text-xs uppercase tracking-[0.25em] text-white/50 font-semibold">Active Keg</div>
+                  <div className="text-xl font-bold text-white font-mono mt-1">{kegState?.id || '---'}</div>
                 </div>
               </div>
             </div>
@@ -95,13 +94,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({
       </aside>
 
       <div className="space-y-6">
-        <div className="glass-panel rounded-[28px] p-6 flex items-center justify-between">
+        <div className="glass-panel rounded-xl p-6 flex flex-wrap items-center justify-between gap-4 border border-white/10">
           <div>
-            <div className="text-xs uppercase tracking-[0.3em] text-ink/50">System Status</div>
-            <div className="text-2xl font-display text-ink mt-2">{isConnected ? 'Stable & Pouring' : 'Awaiting Connection'}</div>
+            <div className="text-xs uppercase tracking-[0.4em] text-white/50 font-bold">System Status</div>
+            <div className="text-3xl font-display text-white mt-2 font-bold">{isConnected ? 'Operational' : 'Disconnected'}</div>
           </div>
-          <div className={`px-4 py-2 rounded-full border text-sm font-semibold ${isConnected ? 'bg-pine/10 text-pine border-pine/30' : 'bg-ember/10 text-ember border-ember/30'}`}>
-            {isConnected ? 'All Systems Nominal' : 'Check Connection'}
+          <div className={`px-5 py-3 rounded-lg border text-sm font-bold ${isConnected ? 'bg-accent-green/20 text-accent-green border-accent-green/40' : 'bg-accent-red/20 text-accent-red border-accent-red/40'}`}>
+            {isConnected ? 'ALL SYSTEMS GO' : 'CHECK CONNECTION'}
           </div>
         </div>
 

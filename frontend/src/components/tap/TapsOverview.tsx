@@ -11,12 +11,12 @@ interface TapsOverviewProps {
 const TapsOverview: React.FC<TapsOverviewProps> = ({ taps, onTapSelect, onTapDelete }) => {
   if (taps.length === 0) {
     return (
-      <div className="glass-panel rounded-[32px] p-12 text-center">
-        <div className="w-16 h-16 bg-ink text-white rounded-2xl mx-auto mb-4 flex items-center justify-center floaty">
-          <Activity size={32} />
+      <div className="glass-panel rounded-2xl p-16 text-center border border-white/10">
+        <div className="w-20 h-20 bg-gradient-to-br from-accent-amber to-accent-gold text-dark-950 rounded-2xl mx-auto mb-6 flex items-center justify-center floaty">
+          <Activity size={40} />
         </div>
-        <h3 className="text-2xl font-display text-ink mb-2">No Tap Systems Detected</h3>
-        <p className="text-ink/60 text-sm">Start a tap system with <code className="bg-white px-2 py-1 rounded-md text-ink/80">node simulators/dashboard.cjs --tap=tap-01</code></p>
+        <h3 className="text-3xl font-display text-white mb-3 font-bold">No Tap Systems Detected</h3>
+        <p className="text-white/60 text-base">Start a tap system with <code className="bg-white/10 px-3 py-1 rounded-lg text-accent-gold font-mono">node simulators/dashboard.cjs --tap=tap-01</code></p>
       </div>
     );
   }

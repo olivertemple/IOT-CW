@@ -14,7 +14,7 @@ const NavIcon: React.FC<NavIconProps> = ({ icon, label, active, onClick }) => {
     // If icon is a React element, clone it with adjusted className
     if (React.isValidElement(icon)) {
       const existing = (icon as any).props.className || '';
-      const colorClass = active ? 'text-ink' : 'text-ink/60';
+      const colorClass = active ? 'text-white' : 'text-white/60';
       renderedIcon = React.cloneElement(icon as React.ReactElement, { className: `${existing} ${colorClass}`.trim() });
     } else {
       renderedIcon = icon;
@@ -26,19 +26,16 @@ const NavIcon: React.FC<NavIconProps> = ({ icon, label, active, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className={`relative px-4 py-2 rounded-full flex items-center gap-2 text-sm font-semibold transition-all border ${
+      className={`relative px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-bold transition-all ${
         active
-          ? 'bg-ink/10 text-ink border-ink ring-1 ring-ink/20'
-          : 'bg-white text-ink/60 border-stone hover:text-ink hover:border-ink'
+          ? 'bg-gradient-to-r from-accent-amber to-accent-gold text-dark-950'
+          : 'bg-white/5 text-white/80 hover:bg-white/10 hover:text-white border border-white/10'
       }`}
       title={label}
       aria-current={active ? 'page' : undefined}
     >
       {renderedIcon}
       <span>{label}</span>
-      {active && (
-        <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-ink rounded-full" aria-hidden />
-      )}
     </button>
   );
 };

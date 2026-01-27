@@ -69,7 +69,7 @@ const App: React.FC = () => {
   const connectedCount = allTaps.filter(t => t.isConnected).length;
 
   return (
-    <div className="app-shell text-ink relative">
+    <div className="app-shell text-white relative">
 
       <Sidebar
         activeView={activeView}
@@ -81,10 +81,10 @@ const App: React.FC = () => {
 
       {alert && <AlertToast message={alert} />}
 
-      <main className="px-8 pb-16 pt-36 relative z-10 max-w-[1400px] mx-auto">
+      <main className="px-6 pb-16 pt-24 relative z-10 max-w-[1600px] mx-auto">
         {/* header removed */}
 
-        <section className="space-y-10">
+        <section className="space-y-8">
           {activeView === 'taps' && (
             <TapsOverview
               taps={allTaps}
