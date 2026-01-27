@@ -82,23 +82,7 @@ const App: React.FC = () => {
       {alert && <AlertToast message={alert} />}
 
       <main className="px-10 pb-16 pt-28 relative z-10 max-w-[1400px] mx-auto">
-        <header className="mb-10 animate-fadeUp">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-end justify-between gap-6">
-              <div>
-                <h1 className="text-5xl font-display text-ink">
-                  {selectedTap ? selectedTap : ''}
-                </h1>
-              </div>
-              {selectedTap && activeView !== 'taps' && (
-                <div className="flex items-center gap-3 text-sm text-ink/70">
-                  <span className="px-3 py-1 rounded-full bg-white border border-stone">Active Tap</span>
-                  <span className="font-semibold">{selectedTap}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
+        {/* header removed */}
 
         <section className="space-y-10">
           {activeView === 'taps' && (
