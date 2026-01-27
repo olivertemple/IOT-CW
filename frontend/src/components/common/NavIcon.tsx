@@ -18,7 +18,7 @@ const NavIcon: React.FC<NavIconProps> = ({ icon, label, active, onClick }) => (
     title={label}
   >
     {icon}
-    <span className="hidden sm:inline">{label}</span>
+    <span>{label}</span>
   </button>
 );
 

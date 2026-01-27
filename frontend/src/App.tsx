@@ -70,7 +70,6 @@ const App: React.FC = () => {
 
   return (
     <div className="app-shell text-ink relative">
-      <div className="app-noise" />
 
       <Sidebar
         activeView={activeView}
