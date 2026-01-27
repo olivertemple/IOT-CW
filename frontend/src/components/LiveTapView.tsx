@@ -136,34 +136,6 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true }
           </motion.div>
         )}
       </div>
-
-      <div className="space-y-6">
-        <div className="glass-panel rounded-[28px] p-6">
-          <h3 className="text-xs font-semibold text-ink/50 uppercase tracking-[0.3em] mb-6">System Information</h3>
-
-          <div className="space-y-6">
-            <div>
-              <div className="text-xs text-ink/50 font-medium mb-2">Keg ID</div>
-              <div className="text-2xl font-semibold text-ink font-mono">{kegState?.id || '---'}</div>
-            </div>
-
-            <div className="pt-6 border-t border-stone">
-              <div className="text-xs text-ink/50 font-medium mb-2">Status</div>
-              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${
-                isPouring
-                  ? 'bg-pine/10 text-pine border-pine/30'
-                  : 'bg-white text-ink/60 border-stone'
-              }`}>
-                <div className={`w-2 h-2 rounded-full ${isPouring ? 'bg-pine' : 'bg-ink/30'}`}></div>
-                <span className="font-semibold text-sm">
-                  {isPouring ? 'Dispensing' : 'Ready'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
     </div>
   );
 };
