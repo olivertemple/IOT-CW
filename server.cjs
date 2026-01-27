@@ -4,7 +4,12 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const db = require('./backend/repositories/database.cjs');
-const { PORT, DB_POLL_INTERVAL_MS, HEARTBEAT_CHECK_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } = require('./backend/config/constants.cjs');
+const constants = require('./backend/config/constants.cjs');
+const PORT = process.env.PORT || constants.PORT;
+const DB_POLL_INTERVAL_MS = constants.DB_POLL_INTERVAL_MS;
+const HEARTBEAT_CHECK_INTERVAL_MS = constants.HEARTBEAT_CHECK_INTERVAL_MS;
+const HEARTBEAT_TIMEOUT_MS = constants.HEARTBEAT_TIMEOUT_MS;
+const path = require('path');
 const MqttService = require('./backend/services/mqttService.cjs');
 const SocketHandler = require('./backend/services/socketHandler.cjs');
 const ConfigController = require('./backend/controllers/configController.cjs');
@@ -40,6 +45,14 @@ const inventoryController = new InventoryController(db);
 // Setup API Routes
 setupRoutes(app, { configController, tapController, inventoryController });
 
+// Serve frontend static files from the Vite build output
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Fallback to index.html for client-side routing except for /api/* paths
+app.get(/^\/(?!api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
 // Initialize Socket.IO Handler
 const socketHandler = new SocketHandler(io, tapStates, db);
 socketHandler.initialize();
@@ -71,6 +84,8 @@ setInterval(() => {
   });
 }, HEARTBEAT_CHECK_INTERVAL_MS);
 
-server.listen(PORT, () => {
-  console.log(`SmartBar Backend running on http://localhost:${PORT}`);
+// Listen on all interfaces so container is accessible from host LAN
+const LISTEN_HOST = process.env.LISTEN_HOST || '0.0.0.0';
+server.listen(PORT, LISTEN_HOST, () => {
+  console.log(`SmartBar Backend running on http://${LISTEN_HOST}:${PORT}`);
 });
