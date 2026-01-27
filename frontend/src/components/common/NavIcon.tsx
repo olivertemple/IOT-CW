@@ -7,19 +7,37 @@ interface NavIconProps {
   onClick: () => void;
 }
 
-const NavIcon: React.FC<NavIconProps> = ({ icon, label, active, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`px-4 py-2 rounded-full flex items-center gap-2 text-sm font-semibold transition-all border ${
-      active
-        ? 'bg-ink text-white border-ink'
-        : 'bg-white text-ink/60 border-stone hover:text-ink hover:border-ink'
-    }`}
-    title={label}
-  >
-    {icon}
-    <span>{label}</span>
-  </button>
-);
+const NavIcon: React.FC<NavIconProps> = ({ icon, label, active, onClick }) => {
+  // Ensure icons inherit color reliably by cloning and applying className
+  let renderedIcon = null as any;
+  try {
+    // If icon is a React element, clone it with adjusted className
+    if (React.isValidElement(icon)) {
+      const existing = (icon as any).props.className || '';
+      const colorClass = active ? 'text-white' : 'text-ink/60';
+      renderedIcon = React.cloneElement(icon as React.ReactElement, { className: `${existing} ${colorClass}`.trim() });
+    } else {
+      renderedIcon = icon;
+    }
+  } catch (e) {
+    renderedIcon = icon;
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      className={`px-4 py-2 rounded-full flex items-center gap-2 text-sm font-semibold transition-all border ${
+        active
+          ? 'bg-ink text-white border-ink'
+          : 'bg-white text-ink/60 border-stone hover:text-ink hover:border-ink'
+      }`}
+      title={label}
+      aria-pressed={active}
+    >
+      {renderedIcon}
+      <span className={active ? 'text-white' : ''}>{label}</span>
+    </button>
+  );
+};
 
 export default NavIcon;
