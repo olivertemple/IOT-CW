@@ -181,16 +181,6 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true }
           </div>
         </div>
 
-        <div className="rounded-[28px] p-6 border border-pine/30 bg-pine/10">
-          <div className="flex items-center gap-2 mb-3">
-            <Activity className="text-pine" size={20} />
-            <h3 className="text-xs font-semibold text-ink uppercase tracking-[0.3em]">Quick Status</h3>
-          </div>
-          <p className="text-sm text-ink font-semibold mb-1">Ready to Serve</p>
-          <p className="text-xs text-ink/60 leading-relaxed">
-            System operating within normal parameters. All levels optimal.
-          </p>
-        </div>
       </div>
     </div>
   );

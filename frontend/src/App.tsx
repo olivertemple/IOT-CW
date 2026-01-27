@@ -92,9 +92,6 @@ const App: React.FC = () => {
                     activeView === 'dashboard' ? 'Live Pour Room' :
                       activeView === 'inventory' ? 'Keg Inventory' : 'Usage Analytics'}
                 </h1>
-                <p className="text-sm text-ink/60 mt-3 max-w-xl">
-                  Live operational visibility across taps, kegs, and flow health — designed for fast decisions in busy service windows.
-                </p>
               </div>
               {selectedTap && activeView !== 'taps' && (
                 <div className="flex items-center gap-3 text-sm text-ink/70">

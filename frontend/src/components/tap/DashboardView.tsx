@@ -27,30 +27,15 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   const isConnected = allTaps.find(t => t.tapId === selectedTap)?.isConnected || false;
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <aside className="space-y-6">
         <div className="glass-panel rounded-[24px] p-5">
-          <div className="text-xs uppercase tracking-[0.3em] text-ink/50">Tap Selector</div>
-          <div className="mt-4 flex flex-col gap-3">
-            {allTaps.map(tap => (
-              <button
-                key={tap.tapId}
-                onClick={() => onTapChange(tap.tapId)}
-                className={`w-full px-4 py-3 rounded-2xl text-left font-semibold border transition-all ${
-                  selectedTap === tap.tapId
-                    ? 'bg-ink text-white border-ink'
-                    : 'bg-white text-ink border-stone hover:border-ink'
-                }`}
-              >
-                <div className="text-sm uppercase tracking-[0.2em] text-ink/50">Tap</div>
-                <div className="text-lg font-display">{tap.tapId}</div>
-              </button>
-            ))}
+          <div className="mt-2">
             <button
               onClick={onBackToTaps}
-              className="w-full px-4 py-3 rounded-2xl bg-white border border-stone text-ink hover:border-ink text-sm font-semibold transition-all"
+              className="px-4 py-3 rounded-2xl bg-white border border-stone text-ink text-sm font-semibold transition-all"
             >
-              ← Back to All Taps
+              ← Back
             </button>
           </div>
         </div>
