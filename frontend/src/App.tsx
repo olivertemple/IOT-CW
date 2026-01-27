@@ -81,7 +81,7 @@ const App: React.FC = () => {
 
       {alert && <AlertToast message={alert} />}
 
-      <main className="px-10 pb-16 pt-28 relative z-10 max-w-[1400px] mx-auto">
+      <main className="px-8 pb-16 pt-36 relative z-10 max-w-[1400px] mx-auto">
         {/* header removed */}
 
         <section className="space-y-10">
