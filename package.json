@@ -13,6 +13,7 @@
     "@google/genai": "^1.30.0",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0",
+    "caniuse-lite": "^1.0.30001766",
     "express": "^5.1.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.554.0",
