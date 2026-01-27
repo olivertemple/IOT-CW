@@ -14,6 +14,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        VITE_BACKEND_URL: "/api"
     ports:
       - "8080:80"
     depends_on:
