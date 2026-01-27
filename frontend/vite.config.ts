@@ -8,6 +8,23 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        // Proxy API and Socket.IO requests to backend during dev
+        proxy: {
+          // Proxy REST API calls to backend running on port 3001
+          '/api': {
+            target: 'http://localhost:3001',
+            changeOrigin: true,
+            secure: false,
+            ws: true,
+          },
+          // Proxy Socket.IO websocket connections to backend
+          '/socket.io': {
+            target: 'http://localhost:3001',
+            ws: true,
+            changeOrigin: true,
+            secure: false,
+          },
+        },
       },
       plugins: [react()],
       define: {

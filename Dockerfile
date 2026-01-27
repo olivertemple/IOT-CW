@@ -25,9 +25,9 @@ COPY --from=builder /app/server.cjs ./server.cjs
 COPY --from=builder /app/backend ./backend
 COPY --from=builder /app/database.cjs ./database.cjs
 
-# Expose a single port (configurable via PORT env)
-# Use a less-common high port to avoid casual scanning
-EXPOSE 31273
-ENV PORT=31273
+# Expose the backend port. Use 3001 so it matches the default
+# backend constant and makes the container predictable.
+EXPOSE 3001
+ENV PORT=3001
 
 CMD ["node", "./server.cjs"]

@@ -6,8 +6,20 @@ import { DocCategory, DocSection, Scenario } from './types';
 // the backend through the same origin (nginx proxy). This avoids hard-
 // coding a host:port like :3001 which breaks when serving the site remotely.
 const envUrl = (import.meta.env && import.meta.env.VITE_BACKEND_URL) as string | undefined;
-export const BACKEND_URL = envUrl || '/api';
-
+// Default during development: use the currently accessed hostname on port
+// 3001 (so the frontend can be served from another host but still reach
+// the backend on the dev machine). In production use the relative `/api`
+// path so the same-origin host serves the API. A build-time override
+// remains available via `VITE_BACKEND_URL`.
+const isDev = Boolean(import.meta.env && import.meta.env.DEV);
+const devBackendFromLocation = (typeof window !== 'undefined' && window.location)
+  ? `${window.location.protocol}//${window.location.hostname}:3001`
+  : 'http://localhost:3001';
+// In production leave the base empty so callers adding `/api/...` resolve
+// to `/api/...` on the same origin. During dev use the accessed host:3001.
+const defaultBackend = isDev ? devBackendFromLocation : '';
+export const BACKEND_URL = envUrl || defaultBackend;
+console.log('Using BACKEND_URL:', BACKEND_URL);
 // UI Configuration Constants
 export const UI_CONSTANTS = {
   // Keg volume thresholds
@@ -19,7 +31,7 @@ export const UI_CONSTANTS = {
   HIGH_TEMP_WARNING: 6,
   
   // Flow rate configuration (Liters Per Minute)
-  MAX_FLOW_RATE_LPM: 5,
+  MAX_FLOW_RATE_LPM: 6,
   
   // Alert display duration (milliseconds)
   ALERT_DURATION_MS: 5000,

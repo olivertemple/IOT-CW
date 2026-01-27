@@ -3,7 +3,7 @@ services:
   app:
     build: .
     ports:
-      - "31273:31273"
+      - "3001:3001"
     environment:
-      - PORT=31273
+      - PORT=3001
     restart: unless-stopped
