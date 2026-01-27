@@ -26,16 +26,19 @@ const NavIcon: React.FC<NavIconProps> = ({ icon, label, active, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 rounded-full flex items-center gap-2 text-sm font-semibold transition-all border ${
+      className={`relative px-4 py-2 rounded-full flex items-center gap-2 text-sm font-semibold transition-all border ${
         active
-          ? 'bg-ink/10 text-ink border-ink'
+          ? 'bg-ink/10 text-ink border-ink ring-1 ring-ink/20'
           : 'bg-white text-ink/60 border-stone hover:text-ink hover:border-ink'
       }`}
       title={label}
-      aria-pressed={active}
+      aria-current={active ? 'page' : undefined}
     >
       {renderedIcon}
       <span>{label}</span>
+      {active && (
+        <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-0.5 bg-ink rounded-full" aria-hidden />
+      )}
     </button>
   );
 };
