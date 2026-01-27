@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Package, AlertCircle, CheckCircle, Truck, TrendingDown } from 'lucide-react';
+import { BACKEND_URL } from '../constants';
 
 interface Props {
   inventory: any[];
@@ -24,7 +25,7 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
   useEffect(() => {
     inventory.forEach(keg => {
       const uid = `${keg.tap_id || 'none'}:${keg.keg_id}`;
-      fetch(`/api/depletion/${keg.keg_id}`)
+      fetch(`${BACKEND_URL}/api/depletion/${keg.keg_id}`)
         .then(r => r.json())
         .then(data => {
           if (data.days !== null && data.days !== undefined) {
@@ -95,6 +96,7 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
                   <thead className="bg-white text-gray-900 font-semibold text-xs">
                     <tr>
                       <th className="p-4">Keg ID</th>
+                      <th className="p-4">Connected Tap</th>
                       <th className="p-4">Volume Remaining</th>
                       <th className="p-4">Status</th>
                       <th className="p-4">Est. Depletion</th>
@@ -107,6 +109,11 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
                       return (
                         <tr key={uid} className="hover:bg-gray-50 transition-colors">
                           <td className="p-4 font-mono font-bold text-gray-900">{keg.keg_id}</td>
+                          <td className="p-4">
+                            <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md text-xs font-semibold border border-indigo-200">
+                              {keg.tap_id || 'Unassigned'}
+                            </span>
+                          </td>
                           <td className="p-4">
                             <div className="flex items-center gap-4">
                               <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
