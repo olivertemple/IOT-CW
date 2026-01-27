@@ -28,7 +28,7 @@ const NavIcon: React.FC<NavIconProps> = ({ icon, label, active, onClick }) => {
       onClick={onClick}
       className={`px-4 py-2 rounded-full flex items-center gap-2 text-sm font-semibold transition-all border ${
         active
-          ? 'bg-ink text-white border-ink'
+          ? 'bg-ink/10 text-ink border-ink'
           : 'bg-white text-ink/60 border-stone hover:text-ink hover:border-ink'
       }`}
       title={label}
