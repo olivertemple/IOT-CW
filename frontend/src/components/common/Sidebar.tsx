@@ -12,7 +12,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeView, isConnected, onViewChange, onSettingsClick, connectedCount }) => {
   return (
-    <header className="fixed top-6 left-1/2 -translate-x-1/2 w-[min(1200px,92vw)] glass-panel rounded-[28px] px-8 py-4 z-50">
+    <header className="fixed top-6 left-1/2 -translate-x-1/2 w-full max-w-[1400px] glass-panel rounded-[28px] px-8 py-4 z-50">
       <div className="flex flex-wrap items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-ink text-white flex items-center justify-center shadow-lg">
