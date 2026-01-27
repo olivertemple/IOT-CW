@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Activity, AlertCircle, ThermometerSun, Droplet } from 'lucide-react';
 import { UI_CONSTANTS } from '../constants';
+import FlowChart from './FlowChart';
 
 interface Props {
   tapState: any;
@@ -32,35 +33,16 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true }
         <div className="flex flex-col lg:flex-row items-start justify-between gap-10">
           <div className="flex-shrink-0">
             <div className="relative">
-              <div className="w-48 h-[22rem] border border-stone rounded-[2.75rem] bg-drift overflow-hidden relative">
-                <motion.div
-                  className={`absolute bottom-0 left-0 w-full ${
-                    pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT
-                      ? 'bg-ember/70'
-                      : 'bg-pine/60'
-                  }`}
-                  initial={{ height: '0%' }}
-                  animate={{ height: `${pct}%` }}
-                  transition={{ type: 'spring', stiffness: 40, damping: 20 }}
-                >
-                  <div className="absolute top-0 left-0 right-0 h-6 bg-white/40"></div>
-                </motion.div>
-                <div className="absolute top-0 right-8 w-4 h-full bg-white/40"></div>
+              <div className="w-full max-w-[520px]">
+                <FlowChart flow={flow} width={520} height={180} maxPoints={80} maxFlow={UI_CONSTANTS.MAX_FLOW_RATE_LPM} />
               </div>
 
-              <div className="mt-6 text-center">
-                <div className="text-6xl font-display text-ink">
-                  {pct}
-                  <span className="text-3xl text-ink/40">%</span>
+              <div className="mt-4 text-center">
+                <div className="text-3xl font-display text-ink">
+                  {flow.toFixed(1)}
+                  <span className="text-base text-ink/40"> L/min</span>
                 </div>
-                <div className="text-xs uppercase tracking-[0.4em] text-ink/50 mt-2">Remaining</div>
-
-                {pct < UI_CONSTANTS.LOW_KEG_THRESHOLD_PCT && (
-                  <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-ember/10 border border-ember/30 rounded-full">
-                    <AlertCircle className="text-ember" size={16} />
-                    <span className="text-ember text-xs font-semibold">Low Level</span>
-                  </div>
-                )}
+                <div className="text-xs uppercase tracking-[0.4em] text-ink/50 mt-2">Flow (last minute)</div>
               </div>
             </div>
           </div>
