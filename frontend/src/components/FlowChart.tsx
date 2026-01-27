@@ -6,20 +6,30 @@ interface FlowChartProps {
   height?: number;
   maxPoints?: number;
   maxFlow?: number;
+  tickMs?: number;
 }
 
-const FlowChart: React.FC<FlowChartProps> = ({ flow, width = 380, height = 180, maxPoints = 60, maxFlow = 10 }) => {
+const FlowChart: React.FC<FlowChartProps> = ({ flow, width = 380, height = 180, maxPoints = 60, maxFlow = 10, tickMs = 500 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [points, setPoints] = useState<number[]>([]);
+  const latestRef = useRef<number>(Number.isFinite(flow) ? flow : 0);
 
-  // push new flow values into the rolling buffer
+  // update latestRef when parent flow changes
   useEffect(() => {
-    setPoints(prev => {
-      const next = prev.slice(-maxPoints + 1);
-      next.push(Number.isFinite(flow) ? flow : 0);
-      return next;
-    });
-  }, [flow, maxPoints]);
+    latestRef.current = Number.isFinite(flow) ? flow : 0;
+  }, [flow]);
+
+  // ticking timer to push latest value into rolling buffer for smooth realtime movement
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPoints(prev => {
+        const next = prev.slice(-maxPoints + 1);
+        next.push(latestRef.current);
+        return next;
+      });
+    }, tickMs);
+    return () => clearInterval(id);
+  }, [maxPoints, tickMs]);
 
   // draw to canvas whenever points change
   useEffect(() => {
@@ -32,7 +42,7 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width = 380, height = 180, 
     canvas.style.height = `${height}px`;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     // background
     ctx.clearRect(0, 0, width, height);
@@ -54,12 +64,14 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width = 380, height = 180, 
     // no data
     if (points.length === 0) return;
 
+    const usedPoints = points.slice(-maxPoints);
+
     // draw filled area
     const step = width / (maxPoints - 1 || 1);
     ctx.beginPath();
-    for (let i = 0; i < points.length; i++) {
+    for (let i = 0; i < usedPoints.length; i++) {
       const x = i * step;
-      const v = Math.max(0, Math.min(points[i], maxFlow));
+      const v = Math.max(0, Math.min(usedPoints[i], maxFlow));
       const y = height - (v / maxFlow) * height;
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
@@ -77,9 +89,9 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width = 380, height = 180, 
 
     // stroke line
     ctx.beginPath();
-    for (let i = 0; i < points.length; i++) {
+    for (let i = 0; i < usedPoints.length; i++) {
       const x = i * step;
-      const v = Math.max(0, Math.min(points[i], maxFlow));
+      const v = Math.max(0, Math.min(usedPoints[i], maxFlow));
       const y = height - (v / maxFlow) * height;
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
@@ -89,8 +101,8 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width = 380, height = 180, 
     ctx.stroke();
 
     // current value marker
-    const lastX = (points.length - 1) * step;
-    const lastV = Math.max(0, Math.min(points[points.length - 1], maxFlow));
+    const lastX = (usedPoints.length - 1) * step;
+    const lastV = Math.max(0, Math.min(usedPoints[usedPoints.length - 1], maxFlow));
     const lastY = height - (lastV / maxFlow) * height;
     ctx.beginPath();
     ctx.fillStyle = '#059669';
