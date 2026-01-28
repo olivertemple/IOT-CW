@@ -217,7 +217,6 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Recommended orders — separate panel */}
       <div className="glass-panel rounded-[32px] p-6">
         <div className="flex items-center justify-between">
           <div>
