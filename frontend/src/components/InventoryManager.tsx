@@ -106,6 +106,8 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
                     {groupedInventory[beerName].map((keg) => {
                       const pct = (keg.volume_remaining_ml / keg.volume_total_ml) * 100;
                       const uid = `${keg.tap_id || 'none'}:${keg.keg_id}`;
+                      const isEmpty = (keg.volume_remaining_ml || 0) <= 0;
+                      const displayStatus = isEmpty ? 'EMPTY' : keg.status;
                       return (
                         <tr key={uid} className="hover:bg-white/60 transition-colors">
                           <td className="p-4 font-mono font-semibold text-ink">{keg.keg_id}</td>
@@ -119,15 +121,15 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
                             </div>
                           </td>
                           <td className="p-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(keg.status)}`}>
-                              {keg.status}
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(displayStatus)}`}>
+                              {displayStatus}
                             </span>
                           </td>
                           <td className="p-4">
                             <div className="flex items-center gap-2">
-                              {pct < 10 && <TrendingDown className="text-ember" size={16} />}
-                              <span className={pct < 10 ? 'text-ember font-semibold' : 'text-ink/60'}>
-                                {formatDepletionTime(depletionData[uid])}
+                              {!isEmpty && pct < 10 && <TrendingDown className="text-ember" size={16} />}
+                              <span className={isEmpty ? 'text-ink/60 font-semibold' : pct < 10 ? 'text-ember font-semibold' : 'text-ink/60'}>
+                                {isEmpty ? 'Empty' : formatDepletionTime(depletionData[uid])}
                               </span>
                             </div>
                           </td>

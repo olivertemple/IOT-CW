@@ -25,7 +25,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   const flow = kegState?.flow || 0;
   const isPouring = tapState?.view === 'POURING';
   const isConnected = allTaps.find(t => t.tapId === selectedTap)?.isConnected || false;
-
+  console.log('DashboardView Render', { selectedTap, tapState, kegState });
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-6">
       <aside className="space-y-6">

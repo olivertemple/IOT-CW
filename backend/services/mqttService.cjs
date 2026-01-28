@@ -111,7 +111,8 @@ class MqttService {
     }
     this.lastTelemetry[kegId] = { vol_remaining_ml: payload.vol_remaining_ml, ts: Date.now(), beer_name: beerName };
 
-    // Update Live State if it's the active pumping keg
+    // Ensure frontend receives latest telemetry (temperature/flow) even when not actively pumping.
+    // If the keg is pumping, preserve the existing behaviour and replace the activeKeg.
     if (payload.state === 'PUMPING') {
       this.tapStates[tapId].activeKeg = {
         id: kegId,
@@ -120,13 +121,20 @@ class MqttService {
         state: payload.state
       };
       this.io.emit('keg_update', { tapId, ...this.tapStates[tapId].activeKeg });
-    } else if (this.tapStates[tapId].activeKeg.id === kegId && payload.state === 'IDLE') {
-      this.tapStates[tapId].activeKeg.state = 'IDLE';
-      this.tapStates[tapId].activeKeg.flow = 0;
+    } else {
+      // For non-pumping telemetry (e.g., IDLE), replace/update all activeKeg fields
+      this.tapStates[tapId].activeKeg = {
+        id: kegId,
+        flow: payload.flow_lpm || 0,
+        temp: payload.temp_beer_c || 0,
+        state: payload.state || 'IDLE'
+      };
+
+      // Emit update so UI shows latest telemetry even while idle
       this.io.emit('keg_update', { tapId, ...this.tapStates[tapId].activeKeg });
-      
+
       // Logic: If idle and < 10% remaining, trigger auto-order
-      if (payload.vol_remaining_ml < 2000) {
+      if (payload.state === 'IDLE' && payload.vol_remaining_ml < 2000) {
         this.db.createOrder(kegId, beerName);
         this.io.emit('order_created', { kegId, beer: beerName, tapId });
       }
