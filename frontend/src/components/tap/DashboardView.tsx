@@ -109,6 +109,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           tapState={tapState}
           kegState={kegState}
           isConnected={isConnected}
+          tapId={selectedTap}
         />
       </div>
     </div>

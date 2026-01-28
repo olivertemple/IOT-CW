@@ -1,21 +1,66 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, AlertCircle, ThermometerSun, Droplet } from 'lucide-react';
 import { UI_CONSTANTS } from '../constants';
-import FlowChart from './FlowChart';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Props {
   tapState: any;
   kegState: any;
   isConnected?: boolean;
+  tapId?: string | null;
 }
 
-const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true }) => {
+const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true, tapId = null }) => {
   const isPouring = tapState?.view === 'POURING';
   const isSwap = tapState?.view === 'SWAP';
   const pct = tapState?.volume_remaining_pct || 0;
   const temp = kegState?.temp || 4.0;
   const flow = kegState?.flow || 0;
+  const [series, setSeries] = useState<Array<{ time: string; flow: number }>>([]);
+  const maxPoints = 150; // ~last minute if using 1s ticks
+  const tickMs = 1000;
+  const latestRef = useRef<number>(flow);
+  const storageKey = `flow_series_${tapId || 'global'}`;
+
+  useEffect(() => {
+    latestRef.current = Number.isFinite(flow) ? flow : 0;
+  }, [flow]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const now = new Date();
+      const label = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setSeries(prev => {
+        const next = prev.slice(-maxPoints + 1);
+        next.push({ time: label, flow: Math.max(0, Number(latestRef.current)) });
+        return next;
+      });
+    }, tickMs);
+    return () => clearInterval(id);
+  }, []);
+
+  // load stored series when tapId changes/mount
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setSeries(parsed.slice(-maxPoints));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [storageKey]);
+
+  // persist series to sessionStorage on change
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(series));
+    } catch (e) {
+      // ignore
+    }
+  }, [series, storageKey]);
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-1 gap-6 max-w-[1400px] mx-auto">
@@ -33,16 +78,29 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true }
         <div className="flex flex-col lg:flex-row items-start justify-between gap-10">
           <div className="flex-shrink-0">
             <div className="relative">
-              <div className="w-full">
-                <FlowChart flow={flow} height={180} maxPoints={80} maxFlow={UI_CONSTANTS.MAX_FLOW_RATE_LPM} />
-              </div>
+              <div className="w-[420px]">
+                <ResponsiveContainer width="100%" height={180}>
+                  <AreaChart data={series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="flowGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.18} />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="time" tick={{ fill: '#94a3b8' }} />
+                    <YAxis domain={[0, UI_CONSTANTS.MAX_FLOW_RATE_LPM]} tick={{ fill: '#94a3b8' }} />
+                    <Tooltip formatter={(value: any) => [`${value} L/min`, 'Flow']} />
+                    <Area type="monotone" dataKey="flow" stroke="#10b981" fill="url(#flowGradient)" dot={false} isAnimationActive={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
 
-              <div className="mt-4 text-center">
-                <div className="text-3xl md:text-4xl lg:text-5xl font-display text-ink">
-                  {flow.toFixed(1)}
-                  <span className="text-base text-ink/40"> L/min</span>
-                </div>
-                <div className="text-xs uppercase tracking-[0.4em] text-ink/50 mt-2">Flow (last minute)</div>
+                {/* <div className="mt-4 text-center">
+                  <div className="text-3xl md:text-4xl lg:text-5xl font-display text-ink">
+                    {flow.toFixed(1)}
+                    <span className="text-base text-ink/40"> L/min</span>
+                  </div>
+                  <div className="text-xs uppercase tracking-[0.4em] text-ink/50 mt-2">Flow (last minute)</div>
+                </div> */}
               </div>
             </div>
           </div>
