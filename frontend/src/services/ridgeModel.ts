@@ -1,4 +1,5 @@
 // Lightweight Ridge regression trainer and predictor (closed-form)
+// Manual implementation to avoid numpy/tensorflow dependencies in browser
 type RawRow = { Date: string; Beer: string; UnitsSold: number; DayOfWeek?: string; IsWeekend?: string; HolidayEffect?: string; PromoLevel?: string };
 
 type ModelRow = {
@@ -18,6 +19,7 @@ function matMul(A: number[][], B: number[][]) {
 }
 function vecMatMul(A: number[][], x: number[]) { return A.map(row=>row.reduce((s,v,i)=>s+v*(x[i]??0),0)); }
 
+// Gauss-Jordan elimination with partial pivoting for matrix inversion
 function invertMatrix(A: number[][]) {
   const n = A.length; const M = A.map(r=>r.slice());
   const I = Array.from({length:n}, (_,i)=>Array.from({length:n}, (_,j)=>i===j?1:0));
@@ -35,11 +37,13 @@ function invertMatrix(A: number[][]) {
   return Inv;
 }
 
+// Closed-form ridge regression: w = (X'X + αI)^-1 X'y
 function ridgeSolve(X: number[][], y: number[], alpha: number) {
   const n = X.length; const p = X[0].length;
   const Xb = X.map(r=>[1,...r]);
   const XT = transpose(Xb);
   const XTX = matMul(XT, Xb);
+  // Add regularization to all features except intercept
   for (let i=1;i<XTX.length;i++) XTX[i][i] += alpha;
   const XTy = matMul(XT, y.map(v=>[v]));
   const XTXinv = invertMatrix(XTX);
@@ -71,6 +75,7 @@ export function trainRidgeAndRecommend(rawRows: RawRow[]) {
       const target = units.slice(i+1,i+8).reduce((s,v)=>s+v,0);
       const idxPast = i-1;
       if (idxPast < 0) continue;
+      // Create lagged features: previous week's usage, week before that, rolling stats
       const usage_7d_past = (()=>{
         if (idxPast+7 >= n) return NaN;
         return units.slice(idxPast+1, idxPast+8).reduce((s,v)=>s+v,0);
@@ -80,6 +85,7 @@ export function trainRidgeAndRecommend(rawRows: RawRow[]) {
         const id = idxPast-1; if (id<0) return NaN; if (id+7>=n) return NaN; return units.slice(id+1,id+8).reduce((s,v)=>s+v,0);
       })();
       if (!isFinite(usage_7d_t2)) continue;
+      // Calculate rolling 3-week std deviation for volatility feature
       const arrPast = [] as number[];
       for (let w=idxPast-2; w<=idxPast; w++){ if (w>=0 && w+7<n) arrPast.push(units.slice(w+1,w+8).reduce((s,v)=>s+v,0)); }
       if (arrPast.length<3) continue;
@@ -140,6 +146,7 @@ export function trainRidgeAndRecommend(rawRows: RawRow[]) {
 
   if (trainX.length===0 || testX.length===0) return { perBeerRecommendation: new Map<string, number>() };
 
+  // Grid search over log-scale regularization strengths (0.001 to 1000)
   const alphas = logspace(-3, 3, 20);
   let bestAlpha = alphas[0]; let bestMae = Infinity;
   for (const a of alphas){

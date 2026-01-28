@@ -92,15 +92,18 @@ class MqttService {
       console.error('[SERVER] logTelemetry error', e); 
     }
 
+    // Track volume consumed - only count decreases (increases are sensor glitches)
     const last = this.lastTelemetry[kegId];
     if (last && typeof last.vol_remaining_ml === 'number' && payload.vol_remaining_ml < last.vol_remaining_ml) {
       const delta = Math.max(0, last.vol_remaining_ml - payload.vol_remaining_ml);
+      // Round timestamp to nearest hour for aggregation (e.g., 12:34:56 → 12:00:00)
       const bucket = Math.floor(Date.now() / 3600000) * 3600000;
       this.db.addUsageHour(bucket, beerName, delta);
     }
     this.lastTelemetry[kegId] = { vol_remaining_ml: payload.vol_remaining_ml, ts: Date.now(), beer_name: beerName };
 
     if (payload.state === 'PUMPING') {
+      // When pumping, preserve exact sensor values (no defaults)
       this.tapStates[tapId].activeKeg = {
         id: kegId,
         flow: payload.flow_lpm,
@@ -109,6 +112,7 @@ class MqttService {
       };
       this.io.emit('keg_update', { tapId, ...this.tapStates[tapId].activeKeg });
     } else {
+      // When idle, apply safe defaults in case sensors report null
       this.tapStates[tapId].activeKeg = {
         id: kegId,
         flow: payload.flow_lpm || 0,

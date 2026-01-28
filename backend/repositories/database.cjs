@@ -55,6 +55,8 @@ function initDb() {
             const hasTapId = columns.some(col => col.name === 'tap_id');
             const kegIdCol = columns.find(col => col.name === 'keg_id');
             
+            // Auto-migrate from old schema (single keg_id PK) to new schema (composite tap_id + keg_id PK)
+            // This lets multi-tap systems use the same keg IDs without conflicts
             if (kegIdCol && kegIdCol.pk === 1 && hasTapId) {
               console.log('[DB] Migrating inventory table to composite primary key...');
               db.serialize(() => {
@@ -225,6 +227,7 @@ module.exports.calculateEfficiency = (callback) => {
         return;
       }
       
+      // Cap at 100% to handle sensor drift or rounding errors
       const efficiency = Math.min(100, (totalActualVolume / totalFlowVolume) * 100);
       callback(isNaN(efficiency) ? null : efficiency);
     }
@@ -245,6 +248,7 @@ module.exports.estimateDepletion = (kegId, currentVolumeMl, callback) => {
       
       const beerName = row.beer_name;
       
+      // Need to query by beer_name (not keg_id) since usage_hourly table doesn't track individual kegs
       db.all(
         `SELECT SUM(volume_ml) as total_volume FROM usage_hourly WHERE beer_name = ? AND bucket_ts > ?`,
         [beerName, sevenDaysAgo],

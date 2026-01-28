@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { initSocket, disconnectSocket } from '../services/socket';
 import { BACKEND_URL } from '../constants';
 
+// Auto-create tap record on first update (handles late-arriving MQTT messages)
 const updateTapInList = (prev: any[], tapId: string, updates: any) => {
   const tapIndex = prev.findIndex(t => t.tapId === tapId);
   if (tapIndex >= 0) {
@@ -71,6 +72,7 @@ export const useTapData = (socket: any, isConnected: boolean) => {
     };
   }, [socket]);
 
+  // Fetch initial state via HTTP when socket connects (real-time updates come via socket)
   useEffect(() => {
     if (isConnected) {
       fetch(`${BACKEND_URL}/api/taps`)

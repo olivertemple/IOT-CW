@@ -7,9 +7,8 @@ const fs = require('fs');
 
 // --- HELPER FUNCTIONS ---
 
-// Regex to strip ANSI codes (Removes dependency on 'strip-ansi' package which causes ESM/CJS issues)
+// Strip ANSI escape codes manually to avoid ESM/CJS compatibility issues with strip-ansi package
 function stripAnsi(str) {
-  // Pattern matches standard ANSI escape sequences
   return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
 }
 
@@ -166,6 +165,7 @@ function parseOutput(source, text) {
   // Strip ANSI codes before processing
   const lines = stripAnsi(text).split('\n');
   
+  // Parse ad-hoc "DATA:" protocol from child process stdout (no proper IPC needed for demo)
   lines.forEach(line => {
     if (line.trim().startsWith('DATA:')) {
       try {

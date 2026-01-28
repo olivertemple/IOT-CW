@@ -42,6 +42,7 @@ const AnalyticsDashboard: React.FC = () => {
     }
   }, []);
 
+  // Shift demo data forward so latest date aligns with today (makes old CSV data look current)
   const timeAdjustedRows = useMemo(() => {
     if (rows.length === 0) return [] as Row[];
     const tsList = rows.map(r => Date.parse(r.Date)).filter(ts => !isNaN(ts));

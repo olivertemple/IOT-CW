@@ -34,27 +34,22 @@ for (const b of beers) {
 const remaining = {};
 beers.forEach(b => remaining[b.keg] = 20000);
 
+// Generate realistic hourly usage patterns (busy evenings, quiet nights)
 for (let t = startBucket; t <= now; t += 3600000) {
   const hour = new Date(t).getHours();
 
   for (const b of beers) {
-    // base demand by hour (evenings busier)
     let multiplier = 1;
-    if (hour >= 18 && hour <= 23) multiplier = 1.6;
-    else if (hour >= 11 && hour <= 14) multiplier = 1.2;
-    else if (hour >= 1 && hour <= 5) multiplier = 0.2;
+    if (hour >= 18 && hour <= 23) multiplier = 1.6;  // Evening rush
+    else if (hour >= 11 && hour <= 14) multiplier = 1.2;  // Lunch
+    else if (hour >= 1 && hour <= 5) multiplier = 0.2;  // Night
 
-    // usage between 0 and ~600 ml per hour scaled
     const usage = Math.max(0, Math.round((randInt(0, 400) * multiplier)));
-
-    // apply usage to remaining (prevent negative)
     const actualUsage = Math.min(remaining[b.keg], usage);
     remaining[b.keg] -= actualUsage;
 
-    // Insert an hourly aggregate row (upsert to accumulate if bucket already exists)
     sql += `INSERT INTO usage_hourly (bucket_ts, beer_name, volume_ml) VALUES (${t}, '${b.name}', ${actualUsage}) ON CONFLICT(bucket_ts, beer_name) DO UPDATE SET volume_ml = usage_hourly.volume_ml + excluded.volume_ml;\n`;
 
-    // Insert a telemetry sample for this hour reflecting remaining vol
     const flow = actualUsage > 0 ? randInt(3, 8) : 0;
     sql += `INSERT INTO telemetry (timestamp, keg_id, vol_remaining_ml, flow_lpm, temp_beer_c) VALUES (${t + 1000}, '${b.keg}', ${remaining[b.keg]}, ${flow}, 4.2);\n`;
   }
@@ -77,9 +72,8 @@ sql += `COMMIT;\n`;
 console.log(`Writing ${days} days of sample data for ${beers.length} beers into volume: ${volume}`);
 
 try {
-  // Run the SQL inside a disposable alpine container with sqlite installed
+  // Use Docker instead of sqlite3 module to write directly to volume-mounted DB
   const cmd = `docker run --rm -i -v ${volume}:/data alpine sh -c "apk add --no-cache sqlite >/dev/null 2>&1 && sqlite3 /data/smartbar.db"`;
-  // Provide SQL via stdin while inheriting stdout/stderr so the container logs are visible.
   execSync(cmd, { input: Buffer.from(sql), stdio: ['pipe', 'inherit', 'inherit'] });
   console.log('Backfill complete.');
 } catch (e) {
