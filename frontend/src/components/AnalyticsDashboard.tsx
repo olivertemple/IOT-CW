@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Activity } from 'lucide-react';
+import { Activity, Package, Box } from 'lucide-react';
 // import CSV as raw text via Vite so we don't rely on fetch paths
 import csvText from '../../data/synthetic_pub_beer_sales.csv?raw';
 import ridgeSvc from '../services/ridgeModel';
@@ -214,31 +214,39 @@ const AnalyticsDashboard: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-6 space-y-4">
-          <div className="text-sm text-ink/60">Next week's orders (all beers)</div>
-          <div className="grid gap-4 mt-4">
-            {Array.from(new Set([...(beerList || []), ...(perBeerRecs ? Array.from(perBeerRecs.keys()) : [])])).map((b:any) => {
-              const qty = perBeerRecs?.get(b) ?? Math.ceil(perBeerAverages.get(b) ?? 0);
-              const isLow = qty === 0;
-              return (
-                <div key={b} className="flex items-center justify-between p-5 bg-white border border-stone rounded-2xl hover:border-ink/30 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-drift border border-stone rounded-2xl flex items-center justify-center">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-ink/70"><rect width="20" height="14" x="2" y="5" rx="3" fill="currentColor" /></svg>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-ink text-base">Order: {b}</div>
-                      <div className="text-xs text-ink/50 font-mono mt-1">Est: next week • Source: {perBeerSource?.get(b) ?? 'Avg'}</div>
-                    </div>
-                  </div>
-                  <div className={`px-3 py-1.5 ${isLow ? 'badge-ember' : 'badge-pine'} badge`}>
-                    {isLow ? 'None needed' : `${qty} units`}
-                  </div>
-                </div>
-              );
-            })}
+        </div>
+      </div>
+
+      {/* Recommended orders — separate panel */}
+      <div className="glass-panel rounded-[32px] p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-lg font-display text-ink">Recommended Orders</h4>
+            <div className="text-xs text-ink/60 mt-1">Auto-suggested restocks based on model and recent averages</div>
           </div>
         </div>
+
+        <div className="mt-4 grid gap-3">
+          {perBeerRecs && Array.from(perBeerRecs.entries()).map(([beerName, qty]) => (
+            <div key={beerName} className="flex items-center justify-between p-4 bg-white border border-stone rounded-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-drift border border-stone rounded-2xl flex items-center justify-center">
+                  <Box size={20} className="text-ink/70" />
+                </div>
+                <div>
+                  <div className="font-semibold text-ink">{beerName}</div>
+                  <div className="text-xs text-ink/50">Source: {perBeerSource?.get(beerName) ?? 'Avg'}</div>
+                </div>
+              </div>
+              <div className="text-lg font-display text-ink">{qty} units</div>
+            </div>
+          ))}
+
+          {!perBeerRecs && (
+            <div className="p-4 text-ink/60">No recommendations available</div>
+          )}
+        </div>
+      </div>
       </div>
     </div>
   );
