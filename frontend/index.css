@@ -1,5 +1,12 @@
 :root {
   color-scheme: light;
+  /* Accent palette */
+  --color-good: #2f6f64; /* green/pine */
+  --color-good-10: rgba(47,111,100,0.10);
+  --color-good-30: rgba(47,111,100,0.30);
+  --color-bad: #d75a4a; /* ember/red */
+  --color-bad-10: rgba(215,90,74,0.10);
+  --color-bad-30: rgba(215,90,74,0.30);
 }
 
 * {
@@ -126,3 +133,18 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* Utility tokens for semantic accents used across the app */
+.text-pine { color: var(--color-good) !important; }
+.bg-pine { background-color: var(--color-good) !important; }
+.border-pine { border-color: var(--color-good-30) !important; }
+.text-pine-10 { color: var(--color-good-10) !important; }
+
+.text-ember { color: var(--color-bad) !important; }
+.bg-ember { background-color: var(--color-bad) !important; }
+.border-ember { border-color: var(--color-bad-30) !important; }
+
+/* Small helper badge styles */
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
+.badge-pine { background: var(--color-good-10); color: var(--color-good); border: 1px solid var(--color-good-30); }
+.badge-ember { background: var(--color-bad-10); color: var(--color-bad); border: 1px solid var(--color-bad-30); }
