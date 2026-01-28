@@ -213,8 +213,6 @@ const AnalyticsDashboard: React.FC = () => {
             </ResponsiveContainer>
           </div>
         )}
-
-        </div>
       </div>
 
       <div className="glass-panel rounded-[32px] p-6">
