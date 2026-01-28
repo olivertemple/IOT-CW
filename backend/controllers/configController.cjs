@@ -1,6 +1,4 @@
 
-// Configuration API Controller
-
 class ConfigController {
   constructor(db, mqttService) {
     this.db = db;

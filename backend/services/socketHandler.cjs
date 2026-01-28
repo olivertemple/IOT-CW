@@ -1,6 +1,4 @@
 
-// Socket.IO Event Handler
-
 class SocketHandler {
   constructor(io, tapStates, db) {
     this.io = io;
@@ -12,13 +10,11 @@ class SocketHandler {
     this.io.on('connection', (socket) => {
       console.log('Frontend Connected:', socket.id);
       
-      // Send initial state for all taps
       Object.keys(this.tapStates).forEach(tapId => {
         socket.emit('tap_update', { tapId, ...this.tapStates[tapId].tap });
         socket.emit('keg_update', { tapId, ...this.tapStates[tapId].activeKeg });
       });
       
-      // Send initial DB data
       this.db.getInventory((rows) => socket.emit('inventory_data', rows));
       this.db.getHistory((rows) => socket.emit('history_data', rows));
       this.db.getOrders((rows) => socket.emit('orders_data', rows));

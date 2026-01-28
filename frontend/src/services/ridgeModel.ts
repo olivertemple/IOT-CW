@@ -1,16 +1,14 @@
 // Lightweight Ridge regression trainer and predictor (closed-form)
-// Replicates the notebook pipeline: feature engineering, time-split per beer, alpha search, train final model
 type RawRow = { Date: string; Beer: string; UnitsSold: number; DayOfWeek?: string; IsWeekend?: string; HolidayEffect?: string; PromoLevel?: string };
 
 type ModelRow = {
   Date: string;
   Beer: string;
-  features: number[]; // in fixed order
+  features: number[];
   usage_7d_std_3w: number;
   target: number;
 };
 
-// Helpers: basic matrix ops
 function transpose(A: number[][]) { return A[0].map((_,i) => A.map(r => r[i])); }
 function matMul(A: number[][], B: number[][]) {
   const m = A.length, p = A[0].length, n = B[0].length;
@@ -20,12 +18,10 @@ function matMul(A: number[][], B: number[][]) {
 }
 function vecMatMul(A: number[][], x: number[]) { return A.map(row=>row.reduce((s,v,i)=>s+v*(x[i]??0),0)); }
 
-// Solve (XTX + alpha*Reg) w = XTy via Gauss-Jordan inversion of square matrix
 function invertMatrix(A: number[][]) {
   const n = A.length; const M = A.map(r=>r.slice());
   const I = Array.from({length:n}, (_,i)=>Array.from({length:n}, (_,j)=>i===j?1:0));
   for (let i=0;i<n;i++) { M[i] = M[i].concat(I[i]); }
-  // forward
   for (let i=0;i<n;i++){
     let pivot = i;
     for (let r=i;r<n;r++) if (Math.abs(M[r][i])>Math.abs(M[pivot][i])) pivot=r;
@@ -40,17 +36,15 @@ function invertMatrix(A: number[][]) {
 }
 
 function ridgeSolve(X: number[][], y: number[], alpha: number) {
-  // add intercept column
   const n = X.length; const p = X[0].length;
   const Xb = X.map(r=>[1,...r]);
   const XT = transpose(Xb);
   const XTX = matMul(XT, Xb);
-  // regularize all except intercept
   for (let i=1;i<XTX.length;i++) XTX[i][i] += alpha;
   const XTy = matMul(XT, y.map(v=>[v]));
   const XTXinv = invertMatrix(XTX);
   const wMat = matMul(XTXinv, XTy).map(r=>r[0]);
-  return wMat; // includes intercept
+  return wMat;
 }
 
 function predictWithWeights(w: number[], x: number[]) { return w[0] + x.reduce((s,v,i)=>s+v*(w[i+1]??0),0); }
@@ -60,29 +54,23 @@ function meanAbsoluteError(ytrue:number[], ypred:number[]) {
   let s=0; for(let i=0;i<n;i++) s+=Math.abs(ytrue[i]-ypred[i]); return s/n;
 }
 
-// Feature engineering and model pipeline
 export function trainRidgeAndRecommend(rawRows: RawRow[]) {
-  // group rows by Beer and sort by Date
   const groups = new Map<string, RawRow[]>();
   rawRows.forEach(r=>{ if(!groups.has(r.Beer)) groups.set(r.Beer,[]); groups.get(r.Beer)!.push(r); });
   for (const [k,arr] of groups) arr.sort((a,b)=>new Date(a.Date).getTime()-new Date(b.Date).getTime());
 
-  // build model rows following notebook: compute target_7d_usage and features
   const modelRows: ModelRow[] = [];
   const beerIds = Array.from(groups.keys()).sort();
   const beerIdMap = new Map(beerIds.map((b,i)=>[b,i]));
 
   for (const [beer, arr] of groups.entries()){
     const n = arr.length;
-    // precompute UnitsSold as array
     const units = arr.map(r=>r.UnitsSold);
-    // compute target = sum next 7 days (i+1..i+7)
     for (let i=0;i<n;i++){
-      if (i+7 >= n) continue; // need full next 7 days
+      if (i+7 >= n) continue;
       const target = units.slice(i+1,i+8).reduce((s,v)=>s+v,0);
-      // usage_7d_past is previous target (shift 1)
       const idxPast = i-1;
-      if (idxPast < 0) continue; // need past
+      if (idxPast < 0) continue;
       const usage_7d_past = (()=>{
         if (idxPast+7 >= n) return NaN;
         return units.slice(idxPast+1, idxPast+8).reduce((s,v)=>s+v,0);
@@ -92,7 +80,6 @@ export function trainRidgeAndRecommend(rawRows: RawRow[]) {
         const id = idxPast-1; if (id<0) return NaN; if (id+7>=n) return NaN; return units.slice(id+1,id+8).reduce((s,v)=>s+v,0);
       })();
       if (!isFinite(usage_7d_t2)) continue;
-      // rolling mean/std of usage_7d_past over window 3 ending at idxPast
       const arrPast = [] as number[];
       for (let w=idxPast-2; w<=idxPast; w++){ if (w>=0 && w+7<n) arrPast.push(units.slice(w+1,w+8).reduce((s,v)=>s+v,0)); }
       if (arrPast.length<3) continue;
@@ -133,10 +120,8 @@ export function trainRidgeAndRecommend(rawRows: RawRow[]) {
 
   if (modelRows.length===0) return { perBeerRecommendation: new Map<string, number>() };
 
-  // build feature matrix and target, and keep mapping to modelRows indices
   const featureCols = modelRows[0].features.length;
 
-  // time-split per beer: collect indices
   const byBeerIdx = new Map<string, number[]>();
   modelRows.forEach((mr,i)=>{ if(!byBeerIdx.has(mr.Beer)) byBeerIdx.set(mr.Beer,[]); byBeerIdx.get(mr.Beer)!.push(i); });
 
@@ -145,7 +130,6 @@ export function trainRidgeAndRecommend(rawRows: RawRow[]) {
   const testIdxGlobal: number[] = [];
 
   for (const [beer, idxs] of byBeerIdx.entries()){
-    // assume modelRows appear in chronological order within beer because we processed groups sorted
     const split = Math.floor(idxs.length * 0.8);
     idxs.forEach((gi, i)=>{
       const mr = modelRows[gi];
@@ -156,7 +140,6 @@ export function trainRidgeAndRecommend(rawRows: RawRow[]) {
 
   if (trainX.length===0 || testX.length===0) return { perBeerRecommendation: new Map<string, number>() };
 
-  // alpha search
   const alphas = logspace(-3, 3, 20);
   let bestAlpha = alphas[0]; let bestMae = Infinity;
   for (const a of alphas){
@@ -170,11 +153,9 @@ export function trainRidgeAndRecommend(rawRows: RawRow[]) {
 
   const finalW = ridgeSolve(trainX, trainY, bestAlpha);
 
-  // predict for test rows and compute order_recommendation = ceil(pred)
   const perBeerRecommendation = new Map<string, number>();
   const perBeerPrediction = new Map<string, number>();
   const perBeerStd = new Map<string, number>();
-  // for each beer take last modelRow (latest date) and predict
   for (const [beer, idxs] of byBeerIdx.entries()){
     const lastIdx = idxs[idxs.length-1];
     const mr = modelRows[lastIdx];

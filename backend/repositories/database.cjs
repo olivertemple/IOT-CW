@@ -2,7 +2,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// Allow overriding DB file path via environment for Docker persistence
 const dbPath = process.env.DB_FILE ? path.resolve(process.env.DB_FILE) : path.resolve(__dirname, 'smartbar.db');
 
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -16,7 +15,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 function initDb() {
   db.serialize(() => {
-    // Configuration Settings
     db.run(`CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
@@ -24,14 +22,12 @@ function initDb() {
         if (err) console.error("Error creating settings table:", err.message);
     });
 
-    // Set default broker if not exists
     db.get("SELECT value FROM settings WHERE key = 'mqtt_broker'", (err, row) => {
         if(!row) {
             db.run("INSERT INTO settings (key, value) VALUES ('mqtt_broker', 'mqtt://test.mosquitto.org')");
         }
     });
 
-    // History of Pours
     db.run(`CREATE TABLE IF NOT EXISTS pour_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp INTEGER,
@@ -41,37 +37,29 @@ function initDb() {
       duration_sec REAL
     )`);
 
-    // Inventory / Keg Status
     db.run(`CREATE TABLE IF NOT EXISTS inventory (
       keg_id TEXT,
       beer_name TEXT,
       volume_total_ml INTEGER,
       volume_remaining_ml INTEGER,
-      status TEXT, -- ACTIVE, STANDBY, EMPTY
-      tap_id TEXT, -- Which tap system this keg belongs to
+      status TEXT,
+      tap_id TEXT,
       last_updated INTEGER,
       PRIMARY KEY (tap_id, keg_id)
     )`);
     
-    // Migration: Check if we need to recreate table with composite primary key
     db.all(`PRAGMA table_info(inventory)`, [], (err, columns) => {
       if (!err && columns && columns.length > 0) {
-        // Check if primary key is composite (tap_id, keg_id)
         db.all(`PRAGMA index_list(inventory)`, [], (idxErr, indexes) => {
           if (!idxErr) {
-            // If table exists but doesn't have composite key, recreate it
             const hasTapId = columns.some(col => col.name === 'tap_id');
             const kegIdCol = columns.find(col => col.name === 'keg_id');
             
-            // If keg_id is still the sole primary key (pk=1), we need to migrate
             if (kegIdCol && kegIdCol.pk === 1 && hasTapId) {
               console.log('[DB] Migrating inventory table to composite primary key...');
               db.serialize(() => {
-                // Backup existing data
                 db.run(`CREATE TABLE inventory_backup AS SELECT * FROM inventory`);
-                // Drop old table
                 db.run(`DROP TABLE inventory`);
-                // Recreate with composite key
                 db.run(`CREATE TABLE inventory (
                   keg_id TEXT,
                   beer_name TEXT,
@@ -82,9 +70,7 @@ function initDb() {
                   last_updated INTEGER,
                   PRIMARY KEY (tap_id, keg_id)
                 )`);
-                // Restore data (kegs without tap_id will be skipped)
                 db.run(`INSERT OR IGNORE INTO inventory SELECT * FROM inventory_backup WHERE tap_id IS NOT NULL`);
-                // Clean up
                 db.run(`DROP TABLE inventory_backup`);
                 console.log('[DB] Inventory table migration complete');
               });
@@ -93,16 +79,14 @@ function initDb() {
         });
       }
     });
-    // Orders
     db.run(`CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp INTEGER,
       keg_id TEXT,
       beer_name TEXT,
-      status TEXT -- PENDING, ORDERED, DELIVERED
+      status TEXT
     )`);
 
-    // Telemetry snapshots (one row per status message)
     db.run(`CREATE TABLE IF NOT EXISTS telemetry (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp INTEGER,
@@ -112,7 +96,6 @@ function initDb() {
       temp_beer_c REAL
     )`);
 
-    // Hourly aggregated usage per beer (compact time-series for charts)
     db.run(`CREATE TABLE IF NOT EXISTS usage_hourly (
       bucket_ts INTEGER,
       beer_name TEXT,
@@ -135,7 +118,6 @@ module.exports = {
     });
   },
   saveSetting: (key, value) => {
-    // Use REPLACE INTO for broader SQLite compatibility compared to ON CONFLICT
     db.run("REPLACE INTO settings (key, value) VALUES (?, ?)", [key, value], (err) => {
         if (err) console.error("Error saving setting:", err.message);
     });
@@ -213,7 +195,6 @@ module.exports.getUsageRange = (beerName, startTs, endTs, callback) => {
   );
 };
 
-// Calculate system efficiency based on telemetry data
 module.exports.calculateEfficiency = (callback) => {
   const oneDayAgo = Date.now() - 24 * 3600000;
   db.all(
@@ -225,7 +206,6 @@ module.exports.calculateEfficiency = (callback) => {
         return;
       }
       
-      // Calculate total expected volume from flow meter
       let totalFlowVolume = 0;
       let totalActualVolume = 0;
       
@@ -235,7 +215,6 @@ module.exports.calculateEfficiency = (callback) => {
         const timeDeltaSec = (curr.timestamp - prev.timestamp) / 1000;
         const volumeDelta = Math.max(0, prev.vol_remaining_ml - curr.vol_remaining_ml);
         
-        // Flow-based volume (flow_lpm * time_minutes * 1000 to convert L to ml)
         const flowBasedVolume = (prev.flow_lpm * timeDeltaSec * 1000) / 60;
         
         totalFlowVolume += flowBasedVolume;
@@ -247,18 +226,15 @@ module.exports.calculateEfficiency = (callback) => {
         return;
       }
       
-      // Efficiency = actual volume / flow meter volume * 100
       const efficiency = Math.min(100, (totalActualVolume / totalFlowVolume) * 100);
       callback(isNaN(efficiency) ? null : efficiency);
     }
   );
 };
 
-// Estimate depletion time for a keg based on usage patterns
 module.exports.estimateDepletion = (kegId, currentVolumeMl, callback) => {
   const sevenDaysAgo = Date.now() - 7 * 24 * 3600000;
   
-  // Get beer name for this keg
   db.get(
     `SELECT beer_name FROM inventory WHERE keg_id = ?`,
     [kegId],
@@ -270,7 +246,6 @@ module.exports.estimateDepletion = (kegId, currentVolumeMl, callback) => {
       
       const beerName = row.beer_name;
       
-      // Calculate average daily consumption from usage_hourly
       db.all(
         `SELECT SUM(volume_ml) as total_volume FROM usage_hourly WHERE beer_name = ? AND bucket_ts > ?`,
         [beerName, sevenDaysAgo],
@@ -281,7 +256,7 @@ module.exports.estimateDepletion = (kegId, currentVolumeMl, callback) => {
           }
           
           const totalVolume = rows[0].total_volume;
-          const avgDailyConsumption = totalVolume / 7; // ml per day
+          const avgDailyConsumption = totalVolume / 7;
           
           if (avgDailyConsumption <= 0 || currentVolumeMl <= 0) {
             callback(null);

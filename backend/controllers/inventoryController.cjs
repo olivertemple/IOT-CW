@@ -1,6 +1,4 @@
 
-// Inventory and Analytics API Controller
-
 class InventoryController {
   constructor(db) {
     this.db = db;
@@ -25,11 +23,9 @@ class InventoryController {
     const from = parseInt(req.query.from, 10) || (Date.now() - 24 * 3600000);
 
     this.db.getUsageRange(beer, from, to, (rows) => {
-      // Normalize response to include zeros for empty buckets
       const map = new Map();
       rows.forEach(r => map.set(r.bucket_ts, r.volume_ml));
 
-      // compute hourly buckets from from -> to (align to hour)
       const startBucket = Math.floor(from / 3600000) * 3600000;
       const endBucket = Math.floor(to / 3600000) * 3600000;
       const out = [];
