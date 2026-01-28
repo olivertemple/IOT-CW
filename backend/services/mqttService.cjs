@@ -11,6 +11,15 @@ class MqttService {
     this.lastTelemetry = lastTelemetry;
   }
 
+  createDefaultTapState(tapId, beerName = 'Unknown') {
+    return {
+      tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null, beer_name: beerName },
+      activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE' },
+      lastHeartbeat: Date.now(),
+      isConnected: true
+    };
+  }
+
   connect(brokerUrl) {
     if (this.mqttClient) {
       console.log('[MQTT] Disconnecting previous client...');
@@ -56,12 +65,7 @@ class MqttService {
 
   handleTapDisplayUpdate(tapId, payload) {
     if (!this.tapStates[tapId]) {
-      this.tapStates[tapId] = {
-        tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null, beer_name: 'Unknown' },
-        activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE' },
-        lastHeartbeat: Date.now(),
-        isConnected: true
-      };
+      this.tapStates[tapId] = this.createDefaultTapState(tapId);
     }
     this.tapStates[tapId].tap = payload;
     this.tapStates[tapId].lastHeartbeat = Date.now();
@@ -71,12 +75,7 @@ class MqttService {
 
   handleKegTelemetry(tapId, kegId, payload) {
     if (!this.tapStates[tapId]) {
-      this.tapStates[tapId] = {
-        tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null, beer_name: payload.beer_name || 'Unknown' },
-        activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE' },
-        lastHeartbeat: Date.now(),
-        isConnected: true
-      };
+      this.tapStates[tapId] = this.createDefaultTapState(tapId, payload.beer_name || 'Unknown');
       console.log(`[MQTT] Auto-registered new tap system: ${tapId}`);
     }
     

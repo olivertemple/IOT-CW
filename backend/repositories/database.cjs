@@ -195,10 +195,10 @@ module.exports.getUsageRange = (beerName, startTs, endTs, callback) => {
 };
 
 module.exports.calculateEfficiency = (callback) => {
-  const oneDayAgo = Date.now() - 24 * 3600000;
+  const recentTelemetryThresholdMs = Date.now() - 24 * 3600000;
   db.all(
     `SELECT vol_remaining_ml, flow_lpm, timestamp FROM telemetry WHERE timestamp > ? ORDER BY timestamp`,
-    [oneDayAgo],
+    [recentTelemetryThresholdMs],
     (err, rows) => {
       if (err || !rows || rows.length < 2) {
         callback(null);

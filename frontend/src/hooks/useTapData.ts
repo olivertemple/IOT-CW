@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { initSocket, disconnectSocket } from '../services/socket';
 import { BACKEND_URL } from '../constants';
 
+const updateTapInList = (prev: any[], tapId: string, updates: any) => {
+  const tapIndex = prev.findIndex(t => t.tapId === tapId);
+  if (tapIndex >= 0) {
+    const updated = [...prev];
+    updated[tapIndex] = { ...updated[tapIndex], ...updates };
+    return updated;
+  } else {
+    return [...prev, { tapId, tap: {}, activeKeg: {}, ...updates }];
+  }
+};
+
 export const useSocketConnection = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [socket, setSocket] = useState<any>(null);
@@ -32,29 +43,11 @@ export const useTapData = (socket: any, isConnected: boolean) => {
     if (!socket) return;
 
     const handleTapUpdate = (data: any) => {
-      setAllTaps(prev => {
-        const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
-        if (tapIndex >= 0) {
-          const updated = [...prev];
-          updated[tapIndex] = { ...updated[tapIndex], tap: data };
-          return updated;
-        } else {
-          return [...prev, { tapId: data.tapId, tap: data, activeKeg: {} }];
-        }
-      });
+      setAllTaps(prev => updateTapInList(prev, data.tapId, { tap: data }));
     };
 
     const handleKegUpdate = (data: any) => {
-      setAllTaps(prev => {
-        const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
-        if (tapIndex >= 0) {
-          const updated = [...prev];
-          updated[tapIndex] = { ...updated[tapIndex], activeKeg: data };
-          return updated;
-        } else {
-          return [...prev, { tapId: data.tapId, tap: {}, activeKeg: data }];
-        }
-      });
+      setAllTaps(prev => updateTapInList(prev, data.tapId, { activeKeg: data }));
     };
 
     const handleTapDeleted = (data: any) => {
@@ -62,15 +55,7 @@ export const useTapData = (socket: any, isConnected: boolean) => {
     };
 
     const handleTapStatusChanged = (data: any) => {
-      setAllTaps(prev => {
-        const tapIndex = prev.findIndex(t => t.tapId === data.tapId);
-        if (tapIndex >= 0) {
-          const updated = [...prev];
-          updated[tapIndex] = { ...updated[tapIndex], isConnected: data.isConnected };
-          return updated;
-        }
-        return prev;
-      });
+      setAllTaps(prev => updateTapInList(prev, data.tapId, { isConnected: data.isConnected }));
     };
 
     socket.on('tap_update', handleTapUpdate);

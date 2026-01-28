@@ -42,7 +42,7 @@ const AnalyticsDashboard: React.FC = () => {
     }
   }, []);
 
-  const shiftedRows = useMemo(() => {
+  const timeAdjustedRows = useMemo(() => {
     if (rows.length === 0) return [] as Row[];
     const tsList = rows.map(r => Date.parse(r.Date)).filter(ts => !isNaN(ts));
     if (tsList.length === 0) return rows;
@@ -60,19 +60,19 @@ const AnalyticsDashboard: React.FC = () => {
   }, [rows]);
 
   const filtered = useMemo(() => {
-    if (shiftedRows.length === 0) return [] as { date: string; units: number }[];
+    if (timeAdjustedRows.length === 0) return [] as { date: string; units: number }[];
     const now = new Date();
     const from = new Date(now.getTime() - weeksBack * 7 * 24 * 3600 * 1000);
-    const sel = shiftedRows.filter(r => r.Beer === beer).map(r => ({ date: new Date(r.Date), units: r.UnitsSold }));
+    const sel = timeAdjustedRows.filter(r => r.Beer === beer).map(r => ({ date: new Date(r.Date), units: r.UnitsSold }));
     const inRange = sel.filter(s => s.date.getTime() >= from.getTime() && s.date.getTime() <= now.getTime());
-    const byDate = new Map<string, number>();
+    const volumeByDateMap = new Map<string, number>();
     inRange.forEach(s => {
       const key = s.date.toISOString().slice(0,10);
-      byDate.set(key, (byDate.get(key) || 0) + s.units);
+      volumeByDateMap.set(key, (volumeByDateMap.get(key) || 0) + s.units);
     });
-    const out = Array.from(byDate.entries()).sort((a,b) => a[0].localeCompare(b[0])).map(([date, units]) => ({ date, units }));
-    return out;
-  }, [shiftedRows, beer, weeksBack]);
+    const aggregatedUsage = Array.from(volumeByDateMap.entries()).sort((a,b) => a[0].localeCompare(b[0])).map(([date, units]) => ({ date, units }));
+    return aggregatedUsage;
+  }, [timeAdjustedRows, beer, weeksBack]);
 
   const chartData = filtered.map(f => ({ bucket_ts: new Date(f.date).getTime(), time: f.date, volume: f.units }));
 
@@ -81,19 +81,19 @@ const AnalyticsDashboard: React.FC = () => {
   const tickInterval = Math.max(0, Math.floor(chartData.length / 8));
 
   const perBeerAverages = useMemo(() => {
-    if (shiftedRows.length === 0) return new Map<string, number>();
+    if (timeAdjustedRows.length === 0) return new Map<string, number>();
     const out = new Map<string, number>();
     const oneWeekMs = 7 * 24 * 3600 * 1000;
     const nowTs = Date.now();
     const fromTs = nowTs - weeksBack * oneWeekMs;
-    const beers = Array.from(new Set(shiftedRows.map(r => r.Beer)));
+    const beers = Array.from(new Set(timeAdjustedRows.map(r => r.Beer)));
     for (const beerName of beers) {
-      const rowsForBeer = shiftedRows.filter(r => r.Beer === beerName && Date.parse(r.Date) >= fromTs);
+      const rowsForBeer = timeAdjustedRows.filter(r => r.Beer === beerName && Date.parse(r.Date) >= fromTs);
       const total = rowsForBeer.reduce((s, r) => s + Number(r.UnitsSold), 0);
       out.set(beerName, total / Math.max(1, weeksBack));
     }
     return out;
-  }, [shiftedRows, weeksBack]);
+  }, [timeAdjustedRows, weeksBack]);
 
   useEffect(() => {
     if (rows.length === 0) { setPerBeerRecs(null); return; }
