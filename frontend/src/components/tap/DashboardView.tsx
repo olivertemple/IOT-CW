@@ -1,5 +1,5 @@
 import React from 'react';
-import { Beer, BarChart3, Package } from 'lucide-react';
+import { Beer, BarChart3, Package, ThermometerSun} from 'lucide-react';
 import LiveTapView from '../LiveTapView';
 import { UI_CONSTANTS } from '../../constants';
 
@@ -29,7 +29,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-6">
       <aside className="space-y-6">
-        <div className="glass-panel rounded-[24px] p-5">
+        {/* <div className="glass-panel rounded-[24px] p-5">
           <div className="mt-2">
             <button
               onClick={onBackToTaps}
@@ -38,14 +38,14 @@ const DashboardView: React.FC<DashboardViewProps> = ({
               ← Back
             </button>
           </div>
-        </div>
+        </div> */}
 
         <div className="glass-panel rounded-[24px] p-5 space-y-4">
           <div className="text-xs uppercase tracking-[0.3em] text-ink/50">Service Snapshot</div>
           <div className="grid gap-3">
             <div className="rounded-2xl border border-stone bg-white p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-ink text-white flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-ink text flex items-center justify-center">
                   <Beer size={18} />
                 </div>
                 <div>
@@ -57,7 +57,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
             <div className={`rounded-2xl border p-4 ${isPouring ? 'bg-pine/10 border-pine/30' : 'bg-white border-stone'}`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isPouring ? 'bg-pine text-white' : 'bg-ink/10 text-ink'}`}>
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isPouring ? 'bg-pine text' : 'bg-ink/10 text-ink'}`}>
                   <BarChart3 size={18} />
                 </div>
                 <div>
@@ -69,8 +69,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
             <div className={`rounded-2xl border p-4 ${temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'bg-ember/10 border-ember/30' : 'bg-white border-stone'}`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'bg-ember text-white' : 'bg-ink/10 text-ink'}`}>
-                  <Beer size={18} />
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'bg-ember text' : 'bg-ink/10 text-ink'}`}>
+                  <ThermometerSun size={18} />
                 </div>
                 <div>
                   <div className="text-xs uppercase tracking-[0.2em] text-ink/50">Temperature</div>
@@ -81,7 +81,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
             <div className="rounded-2xl border border-stone bg-white p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-ink text-white flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-ink text flex items-center justify-center">
                   <Package size={18} />
                 </div>
                 <div>
@@ -101,7 +101,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="text-2xl font-display text-ink mt-2">{isConnected ? 'Stable & Pouring' : 'Awaiting Connection'}</div>
           </div>
           <div className={`px-4 py-2 rounded-full border text-sm font-semibold ${isConnected ? 'bg-pine/10 text-pine border-pine/30' : 'bg-ember/10 text-ember border-ember/30'}`}>
-            {isConnected ? 'All Systems Nominal' : 'Check Connection'}
+            {isConnected ? 'All Systems Normal' : 'Check Connection'}
           </div>
         </div>
 
