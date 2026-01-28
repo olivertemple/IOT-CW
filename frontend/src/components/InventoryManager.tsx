@@ -141,47 +141,6 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
           </div>
         )}
       </div>
-
-      <div className="glass-panel rounded-[32px] overflow-hidden">
-        <div className="p-6 border-b border-stone flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-pine text-white rounded-2xl flex items-center justify-center">
-              <Truck size={20} />
-            </div>
-            <div>
-              <h3 className="text-lg font-display text-ink">Purchase Orders</h3>
-              <p className="text-xs text-ink/50 uppercase tracking-[0.3em]">Auto restock pipeline</p>
-            </div>
-          </div>
-          <span className="text-xs bg-pine/10 text-pine px-3 py-1 rounded-full font-semibold border border-pine/30">Auto-Order Enabled</span>
-        </div>
-        <div className="p-6 space-y-4">
-          {orders.length === 0 ? (
-            <div className="text-center py-12">
-              <CheckCircle className="mx-auto mb-3 text-pine" size={48} />
-              <div className="font-semibold text-ink">No active orders</div>
-              <div className="text-sm text-ink/60 mt-1">All stock levels optimal</div>
-            </div>
-          ) : (
-            orders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-5 bg-white border border-stone rounded-2xl hover:border-ink/30 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-drift border border-stone rounded-2xl flex items-center justify-center">
-                    <Package className="text-ink/70" size={24} />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-ink text-base">Restock: {order.beer_name}</div>
-                    <div className="text-xs text-ink/50 font-mono mt-1">Ref: #{order.id} • {new Date(order.timestamp).toLocaleString()}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-ember/10 text-ember rounded-full border border-ember/30 text-xs font-semibold">
-                  <AlertCircle size={14} /> {order.status}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
     </div>
   );
 };
