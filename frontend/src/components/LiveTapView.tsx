@@ -75,11 +75,11 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true, 
           <div className="text-xs uppercase tracking-[0.4em] text-ink/40">Live Keg</div>
         </div>
 
-        <div className="flex flex-col lg:flex-row items-start justify-between gap-10">
+        <div className="flex flex-col lg:flex-row items-stretch justify-between gap-10">
           <div className="flex-shrink-0">
-            <div className="relative">
-              <div className="w-[420px]">
-                <ResponsiveContainer width="100%" height={180}>
+            <div className="relative h-full">
+              <div className="w-[420px] h-full flex flex-col">
+                <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="flowGradient" x1="0" y1="0" x2="0" y2="1">
@@ -87,20 +87,25 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true, 
                         <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="time" tick={{ fill: '#94a3b8' }} />
-                    <YAxis domain={[0, UI_CONSTANTS.MAX_FLOW_RATE_LPM]} tick={{ fill: '#94a3b8' }} />
+                    <XAxis
+                      dataKey="time"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94a3b8', fontSize: 11 }}
+                      tickFormatter={(t: string) => t.slice(-8)}
+                      minTickGap={12}
+                    />
+                    <YAxis
+                      domain={[0, UI_CONSTANTS.MAX_FLOW_RATE_LPM]}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94a3b8', fontSize: 11 }}
+                      tickFormatter={(v: number) => `${Math.round(v)}`}
+                    />
                     <Tooltip formatter={(value: any) => [`${value} L/min`, 'Flow']} />
                     <Area type="monotone" dataKey="flow" stroke="#10b981" fill="url(#flowGradient)" dot={false} isAnimationActive={false} />
                   </AreaChart>
                 </ResponsiveContainer>
-
-                {/* <div className="mt-4 text-center">
-                  <div className="text-3xl md:text-4xl lg:text-5xl font-display text-ink">
-                    {flow.toFixed(1)}
-                    <span className="text-base text-ink/40"> L/min</span>
-                  </div>
-                  <div className="text-xs uppercase tracking-[0.4em] text-ink/50 mt-2">Flow (last minute)</div>
-                </div> */}
               </div>
             </div>
           </div>
