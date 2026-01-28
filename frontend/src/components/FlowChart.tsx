@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 
 interface FlowChartProps {
-  flow: number; // current flow value (L/min)
+  flow: number;
   width?: number;
   height?: number;
   maxPoints?: number;
@@ -13,7 +13,6 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width, height = 180, maxPoi
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
 
-  // measure container when mounted and on resize
   useEffect(() => {
     const node = containerRef.current;
     if (!node) return;
@@ -22,7 +21,6 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width, height = 180, maxPoi
       setMeasuredWidth(w);
     });
     obs.observe(node);
-    // initial
     setMeasuredWidth(Math.floor(node.getBoundingClientRect().width));
     return () => obs.disconnect();
   }, []);
@@ -32,12 +30,10 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width, height = 180, maxPoi
   const [points, setPoints] = useState<number[]>([]);
   const latestRef = useRef<number>(Number.isFinite(flow) ? flow : 0);
 
-  // update latestRef when parent flow changes
   useEffect(() => {
     latestRef.current = Number.isFinite(flow) ? flow : 0;
   }, [flow]);
 
-  // ticking timer to push latest value into rolling buffer for smooth realtime movement
   useEffect(() => {
     const id = setInterval(() => {
       setPoints(prev => {
@@ -49,7 +45,6 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width, height = 180, maxPoi
     return () => clearInterval(id);
   }, [maxPoints, tickMs]);
 
-  // draw to canvas whenever points change
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -63,12 +58,10 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width, height = 180, maxPoi
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // background
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    // grid lines
     ctx.strokeStyle = '#f0f0f0';
     ctx.lineWidth = 1;
     const gridLines = 4;
@@ -80,12 +73,10 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width, height = 180, maxPoi
       ctx.stroke();
     }
 
-    // no data
     if (points.length === 0) return;
 
     const usedPoints = points.slice(-maxPoints);
 
-    // draw filled area
     const step = width / (Math.max(usedPoints.length - 1, 1));
     ctx.beginPath();
     for (let i = 0; i < usedPoints.length; i++) {
@@ -95,18 +86,15 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width, height = 180, maxPoi
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-    // close path to bottom
     ctx.lineTo(width, height);
     ctx.lineTo(0, height);
     ctx.closePath();
-    // gradient fill
     const grad = ctx.createLinearGradient(0, 0, 0, height);
     grad.addColorStop(0, 'rgba(16, 185, 129, 0.18)');
     grad.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // stroke line
     ctx.beginPath();
     for (let i = 0; i < usedPoints.length; i++) {
       const x = i * step;
@@ -119,7 +107,6 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width, height = 180, maxPoi
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // current value marker
     const lastX = (usedPoints.length - 1) * step;
     const lastV = Math.max(0, Math.min(usedPoints[usedPoints.length - 1], maxFlow));
     const lastY = height - (lastV / maxFlow) * height;
@@ -128,7 +115,6 @@ const FlowChart: React.FC<FlowChartProps> = ({ flow, width, height = 180, maxPoi
     ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
     ctx.fill();
 
-    // axes labels (right)
     ctx.fillStyle = '#8892a6';
     ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'right';

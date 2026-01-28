@@ -1,10 +1,8 @@
 
-// Backend Configuration Constants
-
-const DEFAULT_KEG_SIZE_ML = 20000; // Standard 20L keg
-const HEARTBEAT_TIMEOUT_MS = 30000; // 30 seconds
-const DB_POLL_INTERVAL_MS = 5000; // 5 seconds
-const HEARTBEAT_CHECK_INTERVAL_MS = 10000; // 10 seconds
+const DEFAULT_KEG_SIZE_ML = 20000;
+const HEARTBEAT_TIMEOUT_MS = 30000;
+const DB_POLL_INTERVAL_MS = 5000;
+const HEARTBEAT_CHECK_INTERVAL_MS = 10000;
 const PORT = 3001;
 
 module.exports = {

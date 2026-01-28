@@ -43,10 +43,6 @@ const TapCard: React.FC<TapCardProps> = ({ tap, onSelect, onDelete }) => {
               </span>
             </div>
           </div>
-          {/* <div className={`w-3 h-3 rounded-full ${
-            !tap.isConnected ? 'bg-ember' :
-              isPouring ? 'bg-pine pulse-dot' : 'bg-ink/20'
-          }`}></div> */}
         </div>
 
         <div>
