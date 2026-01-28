@@ -168,7 +168,6 @@ module.exports = {
   }
 };
 
-// Telemetry helpers
 module.exports.logTelemetry = (kegId, volRemaining, flowLpm, tempBeerC, ts = Date.now()) => {
   db.run(
     `INSERT INTO telemetry (timestamp, keg_id, vol_remaining_ml, flow_lpm, temp_beer_c) VALUES (?, ?, ?, ?, ?)`,
