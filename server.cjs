@@ -49,7 +49,7 @@ const socketHandler = new SocketHandler(io, tapStates, db);
 socketHandler.initialize();
 
 db.getSetting('mqtt_broker', (url) => {
-  const broker = url || 'mqtt://test.mosquitto.org';
+  const broker = url || 'mqtt://smart-tap.olivertemple.dev:1883';
   mqttService.connect(broker);
 });
 

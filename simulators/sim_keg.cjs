@@ -8,7 +8,7 @@ let volumeMl = parseInt(args[1]) || MAX_VOL;
 const SYSTEM_ID = args[2] || 'tap-01';
 const BEER_NAME = args[3] || 'Hazy IPA';
 
-const BROKER = 'mqtt://test.mosquitto.org';
+const BROKER = 'mqtt://smart-tap.olivertemple.dev:1883';
 const client = mqtt.connect(BROKER);
 
 const TOPIC_CMD = `${SYSTEM_ID}/keg/${DEVICE_ID}/command`;

@@ -2,7 +2,7 @@
 const mqtt = require('mqtt');
 
 const SYSTEM_ID = process.argv[2] || 'tap-01';
-const BROKER = 'mqtt://test.mosquitto.org';
+const BROKER = 'mqtt://smart-tap.olivertemple.dev:1883';
 
 const KEG_LIST = ['keg-A', 'keg-B', 'keg-C'];
 let activeKegIndex = 0;

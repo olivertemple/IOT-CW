@@ -3,7 +3,7 @@ const mqtt = require('mqtt');
 const readline = require('readline');
 
 const SYSTEM_ID = process.argv[2] || 'tap-01';
-const BROKER = 'mqtt://test.mosquitto.org';
+const BROKER = 'mqtt://smart-tap.olivertemple.dev:1883';
 
 const client = mqtt.connect(BROKER);
 

@@ -24,7 +24,7 @@ function initDb() {
 
     db.get("SELECT value FROM settings WHERE key = 'mqtt_broker'", (err, row) => {
         if(!row) {
-            db.run("INSERT INTO settings (key, value) VALUES ('mqtt_broker', 'mqtt://test.mosquitto.org')");
+            db.run("INSERT INTO settings (key, value) VALUES ('mqtt_broker', 'mqtt://smart-tap.olivertemple.dev:1883')");
         }
     });
 
