@@ -1,5 +1,5 @@
 import React from 'react';
-import { Beer, Settings, Activity, Sparkles, Package, BarChart3 } from 'lucide-react';
+import { Beer, Settings, Activity, Sparkles, Package, BarChart3, LogOut } from 'lucide-react';
 import NavIcon from './NavIcon';
 
 interface SidebarProps {
@@ -7,10 +7,11 @@ interface SidebarProps {
   isConnected: boolean;
   onViewChange: (view: 'dashboard' | 'inventory' | 'analytics' | 'taps') => void;
   onSettingsClick: () => void;
+  onLogout?: () => void;
   connectedCount: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, isConnected, onViewChange, onSettingsClick, connectedCount }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeView, isConnected, onViewChange, onSettingsClick, onLogout, connectedCount }) => {
   return (
     <header className="fixed top-6 left-1/2 -translate-x-1/2 w-full max-w-[1400px] glass-panel rounded-[28px] px-8 py-4 z-50">
       <div className="flex flex-wrap items-center justify-between gap-6">
@@ -61,12 +62,23 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, isConnected, onViewChange
               {connectedCount} Tap{connectedCount === 1 ? '' : 's'} Connected
             </div>
           )}
-          <button
-            onClick={onSettingsClick}
-            className="w-11 h-11 rounded-2xl bg-ink text-white hover:bg-night transition-all"
-          >
-            <Settings size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                title="Sign out"
+                className="w-11 h-11 rounded-2xl bg-white text-ink hover:bg-ink/5 transition-all flex items-center justify-center"
+              >
+                <LogOut size={18} />
+              </button>
+            )}
+            <button
+              onClick={onSettingsClick}
+              className="w-11 h-11 rounded-2xl bg-ink text-white hover:bg-night transition-all"
+            >
+              <Settings size={18} />
+            </button>
+          </div>
         </div>
       </div>
     </header>

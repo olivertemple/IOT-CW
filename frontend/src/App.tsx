@@ -69,6 +69,11 @@ const App: React.FC = () => {
 
   const connectedCount = allTaps.filter(t => t.isConnected).length;
 
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    setAuthToken(null);
+  };
+
   // If not authenticated, show the AuthPage
   if (!authToken) {
     return (
@@ -89,6 +94,7 @@ const App: React.FC = () => {
         isConnected={isConnected}
         onViewChange={setActiveView}
         onSettingsClick={() => setShowSettings(true)}
+        onLogout={handleLogout}
         connectedCount={connectedCount}
       />
 
