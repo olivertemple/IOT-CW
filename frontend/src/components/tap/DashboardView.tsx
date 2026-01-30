@@ -35,7 +35,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="grid gap-3">
             <div className="rounded-2xl border border-stone bg-white p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-ink text flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-ink/10 text flex items-center justify-center">
                   <Beer size={18} />
                 </div>
                 <div>
@@ -71,7 +71,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
 
             <div className="rounded-2xl border border-stone bg-white p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-ink text flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-ink/10 text flex items-center justify-center">
                   <Package size={18} />
                 </div>
                 <div>

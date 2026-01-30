@@ -13,10 +13,20 @@
         theme: {
           extend: {
             colors: {
+              /* Keep the simple palette but also expose the semantic tokens
+                 used throughout the frontend so classes like `text-ink`
+                 and `bg-stone` are available when the CDN builds utilities. */
               primary: '#3b82f6',
               secondary: '#1e293b',
               accent: '#f59e0b',
               dark: '#0f172a',
+              ink: '#171413',
+              stone: '#f2ebe1',
+              mist: '#fbf7f0',
+              pine: '#2f7b78',
+              ember: '#d27d4b',
+              drift: '#efe7db',
+              night: '#0f0f0e'
             },
             fontFamily: {
               mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],

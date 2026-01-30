@@ -53,7 +53,7 @@ const AuthPage: React.FC<Props> = ({ onLogin }) => {
       <div className="w-full max-w-lg glass-panel rounded-[28px] border border-stone p-8">
         <div className="flex items-center gap-4 mb-6">
           <div className="w-14 h-14 rounded-2xl bg-ink text-white flex items-center justify-center shadow">
-            <Beer size={28} color="black" />
+            <Beer size={28}  />
           </div>
           <div>
             <h2 className="text-2xl font-display text-ink">SmartBar Control</h2>
