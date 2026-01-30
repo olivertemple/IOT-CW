@@ -29,17 +29,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-6">
       <aside className="space-y-6">
-        {/* <div className="glass-panel rounded-[24px] p-5">
-          <div className="mt-2">
-            <button
-              onClick={onBackToTaps}
-              className="px-4 py-3 rounded-2xl bg-white border border-stone text-ink text-sm font-semibold transition-all"
-            >
-              ← Back
-            </button>
-          </div>
-        </div> */}
-
         <div className="glass-panel rounded-[24px] p-5 space-y-4">
           <div className="text-xs uppercase tracking-[0.3em] text-ink/50">Service Snapshot</div>
           <div className="grid gap-3">

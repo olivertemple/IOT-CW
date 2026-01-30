@@ -23,7 +23,6 @@ RUN npm install --only=production
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server.cjs ./server.cjs
 COPY --from=builder /app/backend ./backend
-COPY --from=builder /app/database.cjs ./database.cjs
 
 # Expose the backend port. Use 3001 so it matches the default
 # backend constant and makes the container predictable.

@@ -18,7 +18,7 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true, 
   const temp = kegState?.temp || 4.0;
   const flow = kegState?.flow || 0;
   const [series, setSeries] = useState<Array<{ time: string; flow: number }>>([]);
-  const maxPoints = 150; // ~last minute if using 1s ticks
+  const maxPoints = 150;
   const tickMs = 1000;
   const latestRef = useRef<number>(flow);
   const storageKey = `flow_series_${tapId || 'global'}`;
@@ -40,7 +40,6 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true, 
     return () => clearInterval(id);
   }, []);
 
-  // load stored series when tapId changes/mount
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(storageKey);
@@ -49,16 +48,13 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true, 
         if (Array.isArray(parsed)) setSeries(parsed.slice(-maxPoints));
       }
     } catch (e) {
-      // ignore
     }
   }, [storageKey]);
 
-  // persist series to sessionStorage on change
   useEffect(() => {
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(series));
     } catch (e) {
-      // ignore
     }
   }, [series, storageKey]);
 

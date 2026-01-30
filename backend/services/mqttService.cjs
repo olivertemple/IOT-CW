@@ -11,6 +11,15 @@ class MqttService {
     this.lastTelemetry = lastTelemetry;
   }
 
+  createDefaultTapState(tapId, beerName = 'Unknown') {
+    return {
+      tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null, beer_name: beerName },
+      activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE' },
+      lastHeartbeat: Date.now(),
+      isConnected: true
+    };
+  }
+
   connect(brokerUrl) {
     if (this.mqttClient) {
       console.log('[MQTT] Disconnecting previous client...');
@@ -22,7 +31,6 @@ class MqttService {
 
     this.mqttClient.on('connect', () => {
       console.log('[MQTT] Connected to broker');
-      // Subscribe to ALL tap systems using wildcards
       this.mqttClient.subscribe('+/ui/display');
       this.mqttClient.subscribe('+/keg/+/status');
       this.mqttClient.subscribe('+/keg/+/event');
@@ -41,15 +49,12 @@ class MqttService {
       const payload = JSON.parse(message.toString());
       const topicParts = topic.split('/');
       
-      // 1. Tap Display Updates (tapId/ui/display)
       if (topic.includes('/ui/display')) {
         this.handleTapDisplayUpdate(topicParts[0], payload);
       }
-      // 2. Keg Telemetry (tapId/keg/kegId/status)
       else if (topic.includes('/status')) {
         this.handleKegTelemetry(topicParts[0], topicParts[2], payload);
       }
-      // 3. Critical Events (tapId/keg/kegId/event)
       else if (topic.includes('/event')) {
         this.handleKegEvent(topicParts[0], topicParts[2], payload);
       }
@@ -60,12 +65,7 @@ class MqttService {
 
   handleTapDisplayUpdate(tapId, payload) {
     if (!this.tapStates[tapId]) {
-      this.tapStates[tapId] = {
-        tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null, beer_name: 'Unknown' },
-        activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE' },
-        lastHeartbeat: Date.now(),
-        isConnected: true
-      };
+      this.tapStates[tapId] = this.createDefaultTapState(tapId);
     }
     this.tapStates[tapId].tap = payload;
     this.tapStates[tapId].lastHeartbeat = Date.now();
@@ -74,46 +74,36 @@ class MqttService {
   }
 
   handleKegTelemetry(tapId, kegId, payload) {
-    // Auto-register tap if not exists
     if (!this.tapStates[tapId]) {
-      this.tapStates[tapId] = {
-        tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null, beer_name: payload.beer_name || 'Unknown' },
-        activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE' },
-        lastHeartbeat: Date.now(),
-        isConnected: true
-      };
+      this.tapStates[tapId] = this.createDefaultTapState(tapId, payload.beer_name || 'Unknown');
       console.log(`[MQTT] Auto-registered new tap system: ${tapId}`);
     }
     
-    // Update heartbeat on any keg status message
     this.tapStates[tapId].lastHeartbeat = Date.now();
     this.tapStates[tapId].isConnected = true;
     
-    // Get beer name from payload or use previous value
     const beerName = payload.beer_name || this.lastTelemetry[kegId]?.beer_name || "Unknown Beer";
     
-    // Persist to DB with tap association
     this.db.updateKeg(kegId, beerName, payload.vol_total_ml || DEFAULT_KEG_SIZE_ML, payload.vol_remaining_ml, payload.state, tapId);
 
-    // Log telemetry snapshot for time-series analysis
     try {
       this.db.logTelemetry(kegId, payload.vol_remaining_ml, payload.flow_lpm, payload.temp_beer_c, Date.now());
     } catch (e) { 
       console.error('[SERVER] logTelemetry error', e); 
     }
 
-    // Compute volume delta (only when volume decreased) and roll up into hourly bucket
+    // Track volume consumed - only count decreases (increases are sensor glitches)
     const last = this.lastTelemetry[kegId];
     if (last && typeof last.vol_remaining_ml === 'number' && payload.vol_remaining_ml < last.vol_remaining_ml) {
       const delta = Math.max(0, last.vol_remaining_ml - payload.vol_remaining_ml);
-      const bucket = Math.floor(Date.now() / 3600000) * 3600000; // hour start in ms
+      // Round timestamp to nearest hour for aggregation (e.g., 12:34:56 → 12:00:00)
+      const bucket = Math.floor(Date.now() / 3600000) * 3600000;
       this.db.addUsageHour(bucket, beerName, delta);
     }
     this.lastTelemetry[kegId] = { vol_remaining_ml: payload.vol_remaining_ml, ts: Date.now(), beer_name: beerName };
 
-    // Ensure frontend receives latest telemetry (temperature/flow) even when not actively pumping.
-    // If the keg is pumping, preserve the existing behaviour and replace the activeKeg.
     if (payload.state === 'PUMPING') {
+      // When pumping, preserve exact sensor values (no defaults)
       this.tapStates[tapId].activeKeg = {
         id: kegId,
         flow: payload.flow_lpm,
@@ -122,7 +112,7 @@ class MqttService {
       };
       this.io.emit('keg_update', { tapId, ...this.tapStates[tapId].activeKeg });
     } else {
-      // For non-pumping telemetry (e.g., IDLE), replace/update all activeKeg fields
+      // When idle, apply safe defaults in case sensors report null
       this.tapStates[tapId].activeKeg = {
         id: kegId,
         flow: payload.flow_lpm || 0,
@@ -130,10 +120,8 @@ class MqttService {
         state: payload.state || 'IDLE'
       };
 
-      // Emit update so UI shows latest telemetry even while idle
       this.io.emit('keg_update', { tapId, ...this.tapStates[tapId].activeKeg });
 
-      // Logic: If idle and < 10% remaining, trigger auto-order
       if (payload.state === 'IDLE' && payload.vol_remaining_ml < 2000) {
         this.db.createOrder(kegId, beerName);
         this.io.emit('order_created', { kegId, beer: beerName, tapId });

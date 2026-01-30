@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, Package, Box } from 'lucide-react';
-// import CSV as raw text via Vite so we don't rely on fetch paths
 import csvText from '../../data/synthetic_pub_beer_sales.csv?raw';
 import ridgeSvc from '../services/ridgeModel';
 
@@ -43,12 +42,9 @@ const AnalyticsDashboard: React.FC = () => {
     }
   }, []);
 
-  // compute per-beer recommendations (prefer model if available, else use recent averages)
-
-  // shift all dates forward in whole-week steps so the latest date aligns near today
-  const shiftedRows = useMemo(() => {
+  // Shift demo data forward so latest date aligns with today (makes old CSV data look current)
+  const timeAdjustedRows = useMemo(() => {
     if (rows.length === 0) return [] as Row[];
-    // parse timestamps safely and ignore invalid dates
     const tsList = rows.map(r => Date.parse(r.Date)).filter(ts => !isNaN(ts));
     if (tsList.length === 0) return rows;
     const latestTs = Math.max(...tsList);
@@ -58,52 +54,47 @@ const AnalyticsDashboard: React.FC = () => {
     const shiftMs = (isFinite(weeksDiff) ? weeksDiff : 0) * oneWeek;
     return rows.map(r => {
       const orig = Date.parse(r.Date);
-      if (isNaN(orig)) return r; // keep unchanged if date invalid
+      if (isNaN(orig)) return r;
       const shifted = new Date(orig + shiftMs);
       return { ...r, Date: shifted.toISOString().slice(0, 10) };
     });
   }, [rows]);
 
-  // filter rows for selected beer and timeframe
   const filtered = useMemo(() => {
-    if (shiftedRows.length === 0) return [] as { date: string; units: number }[];
+    if (timeAdjustedRows.length === 0) return [] as { date: string; units: number }[];
     const now = new Date();
     const from = new Date(now.getTime() - weeksBack * 7 * 24 * 3600 * 1000);
-    const sel = shiftedRows.filter(r => r.Beer === beer).map(r => ({ date: new Date(r.Date), units: r.UnitsSold }));
+    const sel = timeAdjustedRows.filter(r => r.Beer === beer).map(r => ({ date: new Date(r.Date), units: r.UnitsSold }));
     const inRange = sel.filter(s => s.date.getTime() >= from.getTime() && s.date.getTime() <= now.getTime());
-    // aggregate by date
-    const byDate = new Map<string, number>();
+    const volumeByDateMap = new Map<string, number>();
     inRange.forEach(s => {
       const key = s.date.toISOString().slice(0,10);
-      byDate.set(key, (byDate.get(key) || 0) + s.units);
+      volumeByDateMap.set(key, (volumeByDateMap.get(key) || 0) + s.units);
     });
-    const out = Array.from(byDate.entries()).sort((a,b) => a[0].localeCompare(b[0])).map(([date, units]) => ({ date, units }));
-    return out;
-  }, [shiftedRows, beer, weeksBack]);
+    const aggregatedUsage = Array.from(volumeByDateMap.entries()).sort((a,b) => a[0].localeCompare(b[0])).map(([date, units]) => ({ date, units }));
+    return aggregatedUsage;
+  }, [timeAdjustedRows, beer, weeksBack]);
 
   const chartData = filtered.map(f => ({ bucket_ts: new Date(f.date).getTime(), time: f.date, volume: f.units }));
 
   const totalUnits = filtered.reduce((s, f) => s + f.units, 0);
 
-  // (single-beer suggestion removed; per-beer recommendations shown below)
-
   const tickInterval = Math.max(0, Math.floor(chartData.length / 8));
 
-  // compute simple averages per beer (units per week) for the selected timeframe (last `weeksBack` weeks)
   const perBeerAverages = useMemo(() => {
-    if (shiftedRows.length === 0) return new Map<string, number>();
+    if (timeAdjustedRows.length === 0) return new Map<string, number>();
     const out = new Map<string, number>();
     const oneWeekMs = 7 * 24 * 3600 * 1000;
     const nowTs = Date.now();
     const fromTs = nowTs - weeksBack * oneWeekMs;
-    const beers = Array.from(new Set(shiftedRows.map(r => r.Beer)));
+    const beers = Array.from(new Set(timeAdjustedRows.map(r => r.Beer)));
     for (const beerName of beers) {
-      const rowsForBeer = shiftedRows.filter(r => r.Beer === beerName && Date.parse(r.Date) >= fromTs);
+      const rowsForBeer = timeAdjustedRows.filter(r => r.Beer === beerName && Date.parse(r.Date) >= fromTs);
       const total = rowsForBeer.reduce((s, r) => s + Number(r.UnitsSold), 0);
       out.set(beerName, total / Math.max(1, weeksBack));
     }
     return out;
-  }, [shiftedRows, weeksBack]);
+  }, [timeAdjustedRows, weeksBack]);
 
   useEffect(() => {
     if (rows.length === 0) { setPerBeerRecs(null); return; }
@@ -119,17 +110,13 @@ const AnalyticsDashboard: React.FC = () => {
         return;
       }
     } catch (e) {
-      // fall back to averages below
     }
-    // fallback: use perBeerAverages
     const fallback = new Map<string, number>();
     const src = new Map<string, string>();
     for (const [b, avg] of perBeerAverages.entries()) { fallback.set(b, Math.ceil(avg)); src.set(b, 'Avg'); }
     setPerBeerRecs(fallback);
     setPerBeerSource(src);
   }, [rows, perBeerAverages]);
-
-  // modelUsed kept if needed elsewhere
 
   return (
     <div className="grid grid-cols-1 gap-6">

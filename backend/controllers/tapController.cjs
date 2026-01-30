@@ -1,6 +1,4 @@
 
-// Tap Management API Controller
-
 class TapController {
   constructor(tapStates, db, io) {
     this.tapStates = tapStates;
@@ -23,10 +21,8 @@ class TapController {
     const tapId = req.params.tapId;
     
     if (this.tapStates[tapId]) {
-      // Delete tap state
       delete this.tapStates[tapId];
       
-      // Delete all kegs associated with this tap from inventory
       this.db.deleteKegsByTap(tapId, (err) => {
         if (err) {
           console.error(`[API] Failed to delete kegs for tap ${tapId}:`, err.message);
@@ -35,7 +31,6 @@ class TapController {
           console.log(`[API] Deleted tap system and kegs: ${tapId}`);
           this.io.emit('tap_deleted', { tapId });
           
-          // Broadcast updated inventory to all clients
           this.db.getInventory((rows) => this.io.emit('inventory_data', rows));
           
           res.json({ success: true, message: `Tap ${tapId} disconnected and kegs removed` });

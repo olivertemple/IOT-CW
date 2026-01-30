@@ -8,10 +8,8 @@ interface NavIconProps {
 }
 
 const NavIcon: React.FC<NavIconProps> = ({ icon, label, active, onClick }) => {
-  // Ensure icons inherit color reliably by cloning and applying className
   let renderedIcon = null as any;
   try {
-    // If icon is a React element, clone it with adjusted className
     if (React.isValidElement(icon)) {
       const existing = (icon as any).props.className || '';
       const colorClass = active ? 'text-ink' : 'text-ink/60';

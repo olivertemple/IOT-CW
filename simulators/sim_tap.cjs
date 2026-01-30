@@ -2,19 +2,16 @@
 const mqtt = require('mqtt');
 const readline = require('readline');
 
-// Configuration - Accept tap name from command line
 const SYSTEM_ID = process.argv[2] || 'tap-01';
-const BROKER = 'mqtt://test.mosquitto.org'; // Public test broker
+const BROKER = 'mqtt://smart-tap.olivertemple.dev:1883';
 
 const client = mqtt.connect(BROKER);
 
-// ANSI Colors for logging
-const PUB = '\x1b[32m'; // Green
-const SUB = '\x1b[36m'; // Cyan
-const LOG = '\x1b[33m'; // Yellow
+const PUB = '\x1b[32m';
+const SUB = '\x1b[36m';
+const LOG = '\x1b[33m';
 const RESET = '\x1b[0m';
 
-// State
 let isPouring = false;
 
 console.log(`--- SMART TAP UI SIMULATION (${SYSTEM_ID}) ---`);
@@ -23,7 +20,6 @@ console.log("Controls: Press [ENTER] to toggle Pour Start/Stop\n");
 client.on('connect', () => {
     console.log(`${LOG}[SYSTEM] Connected to Broker ${BROKER}${RESET}`);
     
-    // Subscribe to Display updates from Valve Box
     const topic = `${SYSTEM_ID}/ui/display`;
     client.subscribe(topic);
     console.log(`${LOG}[SYSTEM] Subscribed to ${topic}${RESET}`);
@@ -34,7 +30,6 @@ client.on('message', (topic, message) => {
     console.log(`${SUB}[SUB]  TOPIC: ${topic}${RESET}`);
     console.log(`${SUB}       DATA:  ${JSON.stringify(payload)}${RESET}`);
     
-    // Only render "screen" if running interactively, not when piped to dashboard
     if (process.stdin.isTTY) {
         console.log(`\n\t+----------------------------------+`);
         console.log(`\t| SCREEN UPDATE: ${payload.view.padEnd(17)} |`);
@@ -45,9 +40,7 @@ client.on('message', (topic, message) => {
     }
 });
 
-// Handle User Input
 if (process.stdin.isTTY) {
-    // Interactive Mode (Standalone)
     readline.emitKeypressEvents(process.stdin);
     process.stdin.setRawMode(true);
 
@@ -61,9 +54,7 @@ if (process.stdin.isTTY) {
         }
     });
 } else {
-    // Piped Mode (Running via dashboard.js)
     process.stdin.on('data', (data) => {
-        // Check for newline which signifies ENTER from dashboard
         if (data.toString().includes('\n')) {
             togglePour();
         }

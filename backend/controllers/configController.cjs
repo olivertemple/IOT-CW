@@ -1,6 +1,4 @@
 
-// Configuration API Controller
-
 class ConfigController {
   constructor(db, mqttService) {
     this.db = db;
@@ -9,7 +7,7 @@ class ConfigController {
 
   getConfig(req, res) {
     this.db.getSetting('mqtt_broker', (url) => {
-      res.json({ mqtt_broker: url || 'mqtt://test.mosquitto.org' });
+      res.json({ mqtt_broker: url || 'mqtt://smart-tap.olivertemple.dev:1883' });
     });
   }
 

@@ -29,47 +29,35 @@ const io = new Server(server, {
   }
 });
 
-// Keep last-known telemetry per keg for delta calculations
 const lastTelemetry = {};
-
-// Multi-tap support: track state per tap system
 const tapStates = {};
-// Initialize MQTT Service
 const mqttService = new MqttService(db, tapStates, io, lastTelemetry);
 
-// Initialize Controllers
 const configController = new ConfigController(db, mqttService);
 const tapController = new TapController(tapStates, db, io);
 const inventoryController = new InventoryController(db);
 
-// Setup API Routes
 setupRoutes(app, { configController, tapController, inventoryController });
 
-// Serve frontend static files from the Vite build output
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Fallback to index.html for client-side routing except for /api/* paths
 app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Initialize Socket.IO Handler
 const socketHandler = new SocketHandler(io, tapStates, db);
 socketHandler.initialize();
 
-// Initialize MQTT from DB settings
 db.getSetting('mqtt_broker', (url) => {
-  const broker = url || 'mqtt://test.mosquitto.org';
+  const broker = url || 'mqtt://smart-tap.olivertemple.dev:1883';
   mqttService.connect(broker);
 });
 
-// Polling DB for updates
 setInterval(() => {
   db.getInventory((rows) => io.emit('inventory_data', rows));
   db.getOrders((rows) => io.emit('orders_data', rows));
 }, DB_POLL_INTERVAL_MS);
 
-// Check for disconnected taps (heartbeat timeout)
 setInterval(() => {
   const now = Date.now();
   Object.keys(tapStates).forEach(tapId => {
@@ -84,7 +72,6 @@ setInterval(() => {
   });
 }, HEARTBEAT_CHECK_INTERVAL_MS);
 
-// Listen on all interfaces so container is accessible from host LAN
 const LISTEN_HOST = process.env.LISTEN_HOST || '0.0.0.0';
 server.listen(PORT, LISTEN_HOST, () => {
   console.log(`SmartBar Backend running on http://${LISTEN_HOST}:${PORT}`);
