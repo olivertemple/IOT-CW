@@ -39,12 +39,16 @@ export const useSocketConnection = () => {
 
 export const useTapData = (socket: any, isConnected: boolean) => {
   const [allTaps, setAllTaps] = useState<any[]>([]);
+  
 
   useEffect(() => {
     if (!socket) return;
 
     const handleTapUpdate = (data: any) => {
-      setAllTaps(prev => updateTapInList(prev, data.tapId, { tap: data }));
+      // `tap_update` may include an `isConnected` flag from the server.
+      const updates: any = { tap: data };
+      if (typeof data.isConnected === 'boolean') updates.isConnected = data.isConnected;
+      setAllTaps(prev => updateTapInList(prev, data.tapId, updates));
     };
 
     const handleKegUpdate = (data: any) => {
@@ -81,6 +85,8 @@ export const useTapData = (socket: any, isConnected: boolean) => {
         .catch(err => console.error('Failed to fetch taps:', err));
     }
   }, [isConnected]);
+
+  
 
   return allTaps;
 };
