@@ -14,7 +14,7 @@ class MqttService {
   createDefaultTapState(tapId, beerName = 'Unknown') {
     return {
       tap: { view: 'OFFLINE', beer: 'N/A', pct: 0, alert: null, beer_name: beerName },
-      activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE' },
+      activeKeg: { id: '---', flow: 0, temp: 0, state: 'IDLE', volume_remaining_ml: 0, volume_total_ml: 0 },
       lastHeartbeat: Date.now(),
       isConnected: true
     };
@@ -108,19 +108,36 @@ class MqttService {
         id: kegId,
         flow: payload.flow_lpm,
         temp: payload.temp_beer_c,
-        state: payload.state
+        state: payload.state,
+        volume_remaining_ml: payload.vol_remaining_ml || 0,
+        volume_total_ml: payload.vol_total_ml || DEFAULT_KEG_SIZE_ML
       };
       this.io.emit('keg_update', { tapId, ...this.tapStates[tapId].activeKeg });
     } else {
-      // When idle, apply safe defaults in case sensors report null
-      this.tapStates[tapId].activeKeg = {
-        id: kegId,
-        flow: payload.flow_lpm || 0,
-        temp: payload.temp_beer_c || 0,
-        state: payload.state || 'IDLE'
-      };
+      // When idle, only update the recorded active keg for this tap
+      // if the telemetry is coming from the currently-active keg. This
+      // prevents non-active kegs (which publish status periodically)
+      // from overwriting the UI's active keg/temp display.
+      const currentActive = this.tapStates[tapId].activeKeg && this.tapStates[tapId].activeKeg.id;
 
-      this.io.emit('keg_update', { tapId, ...this.tapStates[tapId].activeKeg });
+      if (currentActive === kegId) {
+        // Update values for the currently active keg (apply safe defaults)
+        this.tapStates[tapId].activeKeg = {
+          id: kegId,
+          flow: payload.flow_lpm || 0,
+          temp: payload.temp_beer_c || 0,
+          state: payload.state || 'IDLE',
+          volume_remaining_ml: payload.vol_remaining_ml || 0,
+          volume_total_ml: payload.vol_total_ml || 0
+        };
+
+        this.io.emit('keg_update', { tapId, ...this.tapStates[tapId].activeKeg });
+      } else {
+        // Telemetry from a non-active keg: store lastTelemetry but do not
+        // overwrite tap's `activeKeg` or emit a `keg_update` meant for the
+        // active keg display. This keeps frontend temperature/active-keg
+        // values stable.
+      }
 
       if (payload.state === 'IDLE' && payload.vol_remaining_ml < 2000) {
         this.db.createOrder(kegId, beerName);

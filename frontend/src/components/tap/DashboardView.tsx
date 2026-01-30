@@ -23,6 +23,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({
   const pct = tapState?.volume_remaining_pct || 0;
   const temp = kegState?.temp || 4.0;
   const flow = kegState?.flow || 0;
+  const remainingLitres = (kegState?.volume_remaining_ml || 0) / 1000;
   const isPouring = tapState?.view === 'POURING';
   const isConnected = allTaps.find(t => t.tapId === selectedTap)?.isConnected || false;
   console.log('DashboardView Render', { selectedTap, tapState, kegState });
@@ -75,7 +76,17 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
                 <div>
                   <div className="text-xs uppercase tracking-[0.2em] text-ink/50">Active Keg</div>
-                  <div className="text-2xl font-semibold text-ink font-mono">{kegState?.id || '---'}</div>
+                    <div className="text-2xl font-semibold text-ink font-mono">{kegState?.id || '---'}</div>
+                    <div className="text-sm text-ink/60 mt-1">
+                      {kegState ? (
+                        <>
+                          <span className="font-semibold">{remainingLitres.toFixed(1)} L</span>
+                          <span className="ml-2">({Math.round(pct)}%)</span>
+                        </>
+                      ) : (
+                        '---'
+                      )}
+                    </div>
                 </div>
               </div>
             </div>
