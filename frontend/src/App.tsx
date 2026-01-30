@@ -8,6 +8,7 @@ import { useAlerts } from './hooks/useAlerts';
 import Sidebar from './components/common/Sidebar';
 import AlertToast from './components/common/AlertToast';
 import SettingsModal from './components/common/SettingsModal';
+import AuthPage from './components/common/AuthPage';
 import TapsOverview from './components/tap/TapsOverview';
 import DashboardView from './components/tap/DashboardView';
 import InventoryManager from './components/InventoryManager';
@@ -16,6 +17,7 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<'dashboard' | 'inventory' | 'analytics' | 'taps'>('taps');
   const [showSettings, setShowSettings] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(typeof window !== 'undefined' ? localStorage.getItem('authToken') : null);
   const [selectedTap, setSelectedTap] = useState<string | null>(null);
   const [tapState, setTapState] = useState<any>(null);
   const [kegState, setKegState] = useState<any>(null);
@@ -27,65 +29,77 @@ const App: React.FC = () => {
   const { alert, showAlert } = useAlerts(socket);
 
   useEffect(() => {
-    if (!selectedTap) return;
-    const found = allTaps.find(t => t.tapId === selectedTap);
-    if (found) {
-      setTapState(found.tap || null);
-      setKegState(found.activeKeg || null);
+    // If not authenticated, show the AuthPage
+    if (!authToken) {
+      return (
+        <AuthPage
+          onLogin={(token: string) => {
+            localStorage.setItem('authToken', token);
+            setAuthToken(token);
+          }}
+        />
+      );
     }
-  }, [selectedTap, allTaps]);
 
-  useEffect(() => {
-    if (!selectedTap && allTaps.length > 0) {
-      setSelectedTap(allTaps[0].tapId);
-    }
-  }, [allTaps, selectedTap]);
+    return (
+      <div className="app-shell text-ink relative">
 
-  const handleTapSelect = (tapId: string, tap: any, keg: any) => {
-    setSelectedTap(tapId);
-    setTapState(tap);
-    setKegState(keg);
-    setActiveView('dashboard');
-  };
+        <Sidebar
+          activeView={activeView}
+          isConnected={isConnected}
+          onViewChange={setActiveView}
+          onSettingsClick={() => setShowSettings(true)}
+          connectedCount={connectedCount}
+        />
 
-  const handleDeleteTap = (tapId: string) => {
-    if (!confirm(`Are you sure you want to disconnect tap "${tapId}"?`)) return;
+        {alert && <AlertToast message={alert} />}
 
-    fetch(`${BACKEND_URL}/api/taps/${tapId}`, { method: 'DELETE' })
-      .then(res => res.json())
-      .then(() => {
-        if (selectedTap === tapId) {
-          setSelectedTap(null);
-          setActiveView('taps');
-        }
-        showAlert(`Tap ${tapId} disconnected`);
-      })
-      .catch(err => {
-        console.error('Failed to delete tap:', err);
-        showAlert(`Error disconnecting tap ${tapId}`);
-      });
-  };
+        <main className="px-8 pb-16 pt-36 relative z-10 max-w-[1400px] mx-auto">
 
-  const connectedCount = allTaps.filter(t => t.isConnected).length;
+          <section className="space-y-10">
+            {activeView === 'taps' && (
+              <TapsOverview
+                taps={allTaps}
+                onTapSelect={handleTapSelect}
+                onTapDelete={handleDeleteTap}
+              />
+            )}
 
-  return (
-    <div className="app-shell text-ink relative">
+            {activeView === 'dashboard' && selectedTap && (
+              <DashboardView
+                allTaps={allTaps}
+                selectedTap={selectedTap}
+                tapState={tapState}
+                kegState={kegState}
+                onTapChange={(tapId) => {
+                  setSelectedTap(tapId);
+                  const tap = allTaps.find(t => t.tapId === tapId);
+                  if (tap) {
+                    setTapState(tap.tap);
+                    setKegState(tap.activeKeg);
+                  }
+                }}
+                onBackToTaps={() => setActiveView('taps')}
+              />
+            )}
 
-      <Sidebar
-        activeView={activeView}
-        isConnected={isConnected}
-        onViewChange={setActiveView}
-        onSettingsClick={() => setShowSettings(true)}
-        connectedCount={connectedCount}
-      />
+            {activeView === 'inventory' && (
+              <InventoryManager inventory={inventory} orders={orders} />
+            )}
 
-      {alert && <AlertToast message={alert} />}
+            {activeView === 'analytics' && (
+              <AnalyticsDashboard history={history} />
+            )}
+          </section>
+        </main>
 
-      <main className="px-8 pb-16 pt-36 relative z-10 max-w-[1400px] mx-auto">
-
-        <section className="space-y-10">
-          {activeView === 'taps' && (
-            <TapsOverview
+        <SettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          onSave={showAlert}
+        />
+      </div>
+    );
               taps={allTaps}
               onTapSelect={handleTapSelect}
               onTapDelete={handleDeleteTap}

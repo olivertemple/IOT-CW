@@ -5,6 +5,21 @@ function setupRoutes(app, controllers) {
   app.get('/api/config', (req, res) => configController.getConfig(req, res));
   app.post('/api/config', (req, res) => configController.updateConfig(req, res));
 
+  // Simple auth endpoint (mock): accepts any non-empty username/password and returns a token
+  app.post('/api/auth/login', (req, res) => {
+    try {
+      const { username, password } = req.body || {};
+      if (!username || !password) {
+        return res.status(400).json({ message: 'username and password required' });
+      }
+      // In a real system, validate credentials, hash passwords, and issue JWTs.
+      const token = Buffer.from(`${username}:${Date.now()}`).toString('base64');
+      return res.json({ token, username });
+    } catch (err) {
+      return res.status(500).json({ message: 'auth error' });
+    }
+  });
+
   app.get('/api/taps', (req, res) => tapController.listTaps(req, res));
   app.delete('/api/taps/:tapId', (req, res) => tapController.deleteTap(req, res));
 
