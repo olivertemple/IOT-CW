@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Beer } from 'lucide-react';
 
 type Props = {
   onLogin: (token: string) => void;
@@ -36,58 +37,67 @@ const AuthPage: React.FC<Props> = ({ onLogin }) => {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || 'Request failed');
       if (body && body.token) {
-        onLogin(body.token);
-      } else {
-        throw new Error('Invalid server response');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Auth error');
-    } finally {
-      setLoading(false);
-    }
-  };
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-surface px-4">
+            <div className="w-full max-w-lg glass-panel rounded-[28px] border border-stone p-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-ink text-white flex items-center justify-center shadow">
+                  <Beer size={28} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-display text-ink">SmartBar Control</h2>
+                  <p className="text-ink/60 text-sm">{mode === 'login' ? 'Sign in to continue' : 'Create a new account'}</p>
+                </div>
+              </div>
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-surface">
-      <div className="w-full max-w-md p-8 bg-white rounded shadow">
-        <h2 className="text-2xl font-semibold mb-4">{mode === 'login' ? 'Sign in' : 'Create account'}</h2>
-        <form onSubmit={handleSubmit}>
-          <label className="block mb-2">
-            <span className="text-sm">Username</span>
-            <input
-              className="mt-1 block w-full border rounded px-3 py-2"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              required
-              autoFocus
-            />
-          </label>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <label className="block">
+                  <span className="text-sm text-ink/70">Username</span>
+                  <input
+                    className="mt-1 block w-full bg-white border border-stone rounded-2xl px-4 py-3 text-ink outline-none"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </label>
 
-          <label className="block mb-4">
-            <span className="text-sm">Password</span>
-            <input
-              type="password"
-              className="mt-1 block w-full border rounded px-3 py-2"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-            />
-          </label>
+                <label className="block">
+                  <span className="text-sm text-ink/70">Password</span>
+                  <input
+                    type="password"
+                    className="mt-1 block w-full bg-white border border-stone rounded-2xl px-4 py-3 text-ink outline-none"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                  />
+                </label>
 
-          {error && <div className="text-red-600 mb-2">{error}</div>}
+                {error && <div className="text-red-600 mb-2">{error}</div>}
 
-          <button
-            type="submit"
-            className="w-full bg-primary text-white py-2 rounded"
-            disabled={loading}
-          >
-            {loading ? (mode === 'login' ? 'Signing in…' : 'Creating…') : (mode === 'login' ? 'Sign in' : 'Create account')}
-          </button>
-        </form>
+                <button
+                  type="submit"
+                  className="w-full rounded-2xl py-3 font-semibold bg-ink text-white disabled:opacity-50"
+                  disabled={loading}
+                >
+                  {loading ? (mode === 'login' ? 'Signing in…' : 'Creating…') : (mode === 'login' ? 'Sign in' : 'Create account')}
+                </button>
+              </form>
 
-        <div className="mt-4 text-center text-sm">
-          {mode === 'login' ? (
-            <>
+              <div className="mt-4 text-center text-sm text-ink/70">
+                {mode === 'login' ? (
+                  <>
+                    Don't have an account? <button className="text-ink underline" onClick={() => setMode('signup')}>Create one</button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account? <button className="text-ink underline" onClick={() => setMode('login')}>Sign in</button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
               Don't have an account? <button className="text-primary underline" onClick={() => setMode('signup')}>Create one</button>
             </>
           ) : (

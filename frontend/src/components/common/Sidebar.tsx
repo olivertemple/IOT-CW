@@ -63,21 +63,24 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, isConnected, onViewChange
             </div>
           )}
           <div className="flex items-center gap-2">
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                title="Sign out"
-                className="w-11 h-11 rounded-2xl bg-white text-ink hover:bg-ink/5 transition-all flex items-center justify-center"
-              >
-                <LogOut size={18} />
-              </button>
-            )}
             <button
               onClick={onSettingsClick}
               className="w-11 h-11 rounded-2xl bg-ink text-white hover:bg-night transition-all"
             >
               <Settings size={18} />
             </button>
+            {/* push logout further to the right */}
+            {onLogout && (
+              <div className="ml-4">
+                <button
+                  onClick={onLogout}
+                  title="Sign out"
+                  className="w-11 h-11 rounded-2xl bg-white text-ink hover:bg-ink/5 transition-all flex items-center justify-center"
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
