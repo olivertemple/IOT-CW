@@ -27,79 +27,78 @@ const App: React.FC = () => {
   const { inventory, orders } = useInventoryData(socket, isConnected);
   const history = useHistoryData(socket);
   const { alert, showAlert } = useAlerts(socket);
+  useEffect(() => {
+    if (!selectedTap) return;
+    const found = allTaps.find(t => t.tapId === selectedTap);
+    if (found) {
+      setTapState(found.tap || null);
+      setKegState(found.activeKeg || null);
+    }
+  }, [selectedTap, allTaps]);
 
   useEffect(() => {
-    // If not authenticated, show the AuthPage
-    if (!authToken) {
-      return (
-        <AuthPage
-          onLogin={(token: string) => {
-            localStorage.setItem('authToken', token);
-            setAuthToken(token);
-          }}
-        />
-      );
+    if (!selectedTap && allTaps.length > 0) {
+      setSelectedTap(allTaps[0].tapId);
     }
+  }, [allTaps, selectedTap]);
 
+  const handleTapSelect = (tapId: string, tap: any, keg: any) => {
+    setSelectedTap(tapId);
+    setTapState(tap);
+    setKegState(keg);
+    setActiveView('dashboard');
+  };
+
+  const handleDeleteTap = (tapId: string) => {
+    if (!confirm(`Are you sure you want to disconnect tap "${tapId}"?`)) return;
+
+    fetch(`${BACKEND_URL}/api/taps/${tapId}`, { method: 'DELETE' })
+      .then(res => res.json())
+      .then(() => {
+        if (selectedTap === tapId) {
+          setSelectedTap(null);
+          setActiveView('taps');
+        }
+        showAlert(`Tap ${tapId} disconnected`);
+      })
+      .catch(err => {
+        console.error('Failed to delete tap:', err);
+        showAlert(`Error disconnecting tap ${tapId}`);
+      });
+  };
+
+  const connectedCount = allTaps.filter(t => t.isConnected).length;
+
+  // If not authenticated, show the AuthPage
+  if (!authToken) {
     return (
-      <div className="app-shell text-ink relative">
-
-        <Sidebar
-          activeView={activeView}
-          isConnected={isConnected}
-          onViewChange={setActiveView}
-          onSettingsClick={() => setShowSettings(true)}
-          connectedCount={connectedCount}
-        />
-
-        {alert && <AlertToast message={alert} />}
-
-        <main className="px-8 pb-16 pt-36 relative z-10 max-w-[1400px] mx-auto">
-
-          <section className="space-y-10">
-            {activeView === 'taps' && (
-              <TapsOverview
-                taps={allTaps}
-                onTapSelect={handleTapSelect}
-                onTapDelete={handleDeleteTap}
-              />
-            )}
-
-            {activeView === 'dashboard' && selectedTap && (
-              <DashboardView
-                allTaps={allTaps}
-                selectedTap={selectedTap}
-                tapState={tapState}
-                kegState={kegState}
-                onTapChange={(tapId) => {
-                  setSelectedTap(tapId);
-                  const tap = allTaps.find(t => t.tapId === tapId);
-                  if (tap) {
-                    setTapState(tap.tap);
-                    setKegState(tap.activeKeg);
-                  }
-                }}
-                onBackToTaps={() => setActiveView('taps')}
-              />
-            )}
-
-            {activeView === 'inventory' && (
-              <InventoryManager inventory={inventory} orders={orders} />
-            )}
-
-            {activeView === 'analytics' && (
-              <AnalyticsDashboard history={history} />
-            )}
-          </section>
-        </main>
-
-        <SettingsModal
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
-          onSave={showAlert}
-        />
-      </div>
+      <AuthPage
+        onLogin={(token: string) => {
+          localStorage.setItem('authToken', token);
+          setAuthToken(token);
+        }}
+      />
     );
+  }
+
+  return (
+    <div className="app-shell text-ink relative">
+
+      <Sidebar
+        activeView={activeView}
+        isConnected={isConnected}
+        onViewChange={setActiveView}
+        onSettingsClick={() => setShowSettings(true)}
+        connectedCount={connectedCount}
+      />
+
+      {alert && <AlertToast message={alert} />}
+
+      <main className="px-8 pb-16 pt-36 relative z-10 max-w-[1400px] mx-auto">
+
+        <section className="space-y-10">
+          {activeView === 'taps' && (
+            <TapsOverview
               taps={allTaps}
               onTapSelect={handleTapSelect}
               onTapDelete={handleDeleteTap}

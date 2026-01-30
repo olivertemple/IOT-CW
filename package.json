@@ -10,6 +10,7 @@
     "start:server": "node ./server.cjs"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "@google/genai": "^1.30.0",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.11.0",
