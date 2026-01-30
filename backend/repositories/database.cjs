@@ -104,6 +104,14 @@ function initDb() {
       volume_ml INTEGER,
       PRIMARY KEY (bucket_ts, beer_name)
     )`);
+
+    // Users table for authentication
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE,
+      password_hash TEXT,
+      created_at INTEGER
+    )`);
   });
 }
 
@@ -167,6 +175,25 @@ module.exports = {
   },
   getOrders: (callback) => {
       db.all(`SELECT * FROM orders ORDER BY timestamp DESC`, [], (err, rows) => callback(rows || []));
+  }
+  ,
+  createUser: (username, passwordHash, callback) => {
+    db.run(`INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)`, [username, passwordHash, Date.now()], function(err) {
+      if (err) {
+        console.error('[DB] createUser error:', err.message);
+        return callback && callback(err);
+      }
+      callback && callback(null, { id: this.lastID, username });
+    });
+  },
+  getUserByUsername: (username, callback) => {
+    db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, row) => {
+      if (err) {
+        console.error('[DB] getUserByUsername error:', err.message);
+        return callback && callback(err);
+      }
+      callback && callback(null, row);
+    });
   }
 };
 

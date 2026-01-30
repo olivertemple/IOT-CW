@@ -8,6 +8,7 @@ import { useAlerts } from './hooks/useAlerts';
 import Sidebar from './components/common/Sidebar';
 import AlertToast from './components/common/AlertToast';
 import SettingsModal from './components/common/SettingsModal';
+import AuthPage from './components/common/AuthPage';
 import TapsOverview from './components/tap/TapsOverview';
 import DashboardView from './components/tap/DashboardView';
 import InventoryManager from './components/InventoryManager';
@@ -16,6 +17,7 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<'dashboard' | 'inventory' | 'analytics' | 'taps'>('taps');
   const [showSettings, setShowSettings] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(typeof window !== 'undefined' ? localStorage.getItem('authToken') : null);
   const [selectedTap, setSelectedTap] = useState<string | null>(null);
   const [tapState, setTapState] = useState<any>(null);
   const [kegState, setKegState] = useState<any>(null);
@@ -25,7 +27,6 @@ const App: React.FC = () => {
   const { inventory, orders } = useInventoryData(socket, isConnected);
   const history = useHistoryData(socket);
   const { alert, showAlert } = useAlerts(socket);
-
   useEffect(() => {
     if (!selectedTap) return;
     const found = allTaps.find(t => t.tapId === selectedTap);
@@ -68,6 +69,23 @@ const App: React.FC = () => {
 
   const connectedCount = allTaps.filter(t => t.isConnected).length;
 
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    setAuthToken(null);
+  };
+
+  // If not authenticated, show the AuthPage
+  if (!authToken) {
+    return (
+      <AuthPage
+        onLogin={(token: string) => {
+          localStorage.setItem('authToken', token);
+          setAuthToken(token);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="app-shell text-ink relative">
 
@@ -76,6 +94,7 @@ const App: React.FC = () => {
         isConnected={isConnected}
         onViewChange={setActiveView}
         onSettingsClick={() => setShowSettings(true)}
+        onLogout={handleLogout}
         connectedCount={connectedCount}
       />
 
