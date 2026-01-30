@@ -90,7 +90,7 @@ const InventoryManager: React.FC<Props> = ({ inventory, orders }) => {
           <div className="divide-y divide-stone">
             {beerTypes.map((beerName) => (
               <div key={beerName} className="overflow-x-auto scrollbar">
-                <div className="bg-drift px-4 py-3 border-b border-stone">
+                <div className=" px-4 py-3 border-b border-stone">
                   <h4 className="font-semibold text-ink text-xs uppercase tracking-[0.3em]">{beerName}</h4>
                 </div>
                 <table className="w-full text-left text-sm text-ink/80">

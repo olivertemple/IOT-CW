@@ -16,6 +16,9 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true, 
   const isSwap = tapState?.view === 'SWAP';
   const pct = tapState?.volume_remaining_pct || 0;
   const temp = kegState?.temp || 4.0;
+  const tempRangeMin = UI_CONSTANTS.OPTIMAL_TEMP_MIN;
+  const tempRangeMax = UI_CONSTANTS.OPTIMAL_TEMP_MAX;
+  const tempPct = Math.min(Math.max(((temp - tempRangeMin) / (tempRangeMax - tempRangeMin)) * 100, 0), 100);
   const flow = kegState?.flow || 0;
   const [series, setSeries] = useState<Array<{ time: string; flow: number }>>([]);
   const maxPoints = 150;
@@ -161,7 +164,7 @@ const LiveTapView: React.FC<Props> = ({ tapState, kegState, isConnected = true, 
                 <div className="h-2 bg-drift rounded-full overflow-hidden">
                   <motion.div
                     className={`h-full ${temp > UI_CONSTANTS.HIGH_TEMP_WARNING ? 'bg-ember' : 'bg-pine'}`}
-                    animate={{ width: `${Math.min((temp / 10) * 100, 100)}%` }}
+                    animate={{ width: `${tempPct}%` }}
                   />
                 </div>
               </div>

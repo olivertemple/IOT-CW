@@ -2,7 +2,15 @@
 const mqtt = require('mqtt');
 const readline = require('readline');
 
-const SYSTEM_ID = process.argv[2] || 'tap-01';
+const argv = process.argv.slice(2);
+if (argv.includes('--help') || argv.includes('-h')) {
+    console.log('Usage: node sim_tap.cjs [SYSTEM_ID]');
+    console.log('  SYSTEM_ID   MQTT system id / tap id (default tap-01)');
+    console.log('Options: --help, -h   show this help');
+    process.exit(0);
+}
+
+const SYSTEM_ID = argv[0] || 'tap-01';
 const BROKER = 'mqtt://smart-tap.olivertemple.dev:1883';
 
 const client = mqtt.connect(BROKER);

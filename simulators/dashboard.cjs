@@ -28,8 +28,28 @@ const args = process.argv.slice(2);
 const TAP_NAME = args.find(arg => arg.startsWith('--tap='))?.split('=')[1] || 'tap-01';
 const BEER_NAME = args.find(arg => arg.startsWith('--beer='))?.split('=')[1] || 'Hazy IPA';
 
+// Print help/usage
+function printHelpDashboard() {
+  console.log('Usage: node dashboard.cjs [options]');
+  console.log('Options:');
+  console.log('  --tap=<tapId>        Set the system tap id (default: tap-01)');
+  console.log('  --beer="Name"        Set beer name for all simulated kegs (default: Hazy IPA)');
+  console.log('  --kegs=ID:vol,...     Override keg list and starting volumes (e.g. keg-A:1000,keg-B:20000)');
+  console.log('  --help, -h            Show this help');
+}
+
+if (args.includes('--help') || args.includes('-h')) {
+  printHelpDashboard();
+  process.exit(0);
+}
+
 // Parse kegs argument: --kegs=keg-A:1000,keg-B:20000,keg-C:20000
-const kegsArg = args.find(arg => arg.startsWith('--kegs='))?.split('=')[1];
+let kegsArg = args.find(arg => arg.startsWith('--kegs='))?.split('=')[1];
+if (!kegsArg) {
+  const idx = args.indexOf('--kegs');
+  if (idx !== -1 && args[idx + 1]) kegsArg = args[idx + 1];
+}
+console.log(`Parsed --kegs: ${kegsArg || '<none>'}`);
 const KEGS = kegsArg ? kegsArg.split(',').map(k => {
   const [id, vol] = k.split(':');
   return { id, vol: parseInt(vol) || 20000, beer: BEER_NAME };

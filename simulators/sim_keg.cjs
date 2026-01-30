@@ -8,6 +8,21 @@ let volumeMl = parseInt(args[1]) || MAX_VOL;
 const SYSTEM_ID = args[2] || 'tap-01';
 const BEER_NAME = args[3] || 'Hazy IPA';
 
+function printHelpKeg() {
+    console.log('Usage: node sim_keg.cjs <deviceId> <volumeMl> <systemId> <beerName>');
+    console.log('Positional args:');
+    console.log('  deviceId   e.g. keg-A (default keg-A)');
+    console.log('  volumeMl   starting volume in ml (default 20000)');
+    console.log('  systemId   MQTT system id / tap id (default tap-01)');
+    console.log('  beerName   beer name to report (default "Hazy IPA")');
+    console.log('Options: --help, -h   show this help');
+}
+
+if (args.includes('--help') || args.includes('-h')) {
+    printHelpKeg();
+    process.exit(0);
+}
+
 const BROKER = 'mqtt://smart-tap.olivertemple.dev:1883';
 const client = mqtt.connect(BROKER);
 
