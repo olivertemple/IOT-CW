@@ -27,11 +27,11 @@ export const UI_CONSTANTS = {
   
   // Temperature thresholds (Celsius)
   OPTIMAL_TEMP_MIN: 3,
-  OPTIMAL_TEMP_MAX: 5,
+  OPTIMAL_TEMP_MAX: 25,
   HIGH_TEMP_WARNING: 6,
   
   // Flow rate configuration (Liters Per Minute)
-  MAX_FLOW_RATE_LPM: 6,
+  MAX_FLOW_RATE_LPM: 1,
   
   // Alert display duration (milliseconds)
   ALERT_DURATION_MS: 5000,
