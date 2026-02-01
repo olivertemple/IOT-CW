@@ -8,12 +8,27 @@ interface TapCardProps {
   onDelete: (tapId: string) => void;
 }
 
-const TapCard: React.FC<TapCardProps> = ({ tap, onSelect, onDelete }) => {
+interface TapCardPropsExtended extends TapCardProps {
+  inventory?: any[];
+  kegTelemetry?: Record<string, any>;
+}
+
+const TapCard: React.FC<TapCardPropsExtended> = ({ tap, onSelect, onDelete, inventory = [], kegTelemetry = {} }) => {
   const tapData = tap.tap || {};
   const kegData = tap.activeKeg || {};
   const pct = tapData.volume_remaining_pct || 0;
   const isPouring = tapData.view === 'POURING';
-  const temp = kegData.temp || 4.0;
+
+  // Prefer telemetry from keg-A for this tap if available
+  let temp = kegData.temp;
+  try {
+    const kegA = inventory.find(k => k.tap_id === tap.tapId && /-A$/.test(k.keg_id));
+    if (kegA) {
+      const tele = kegTelemetry[kegA.keg_id];
+      if (tele && typeof tele.temp === 'number') temp = tele.temp;
+    }
+  } catch (e) {}
+  if (typeof temp !== 'number') temp = 4.0;
 
   return (
     <div className="glass-panel rounded-[30px] p-6 relative hover:-translate-y-1 transition-all duration-200">

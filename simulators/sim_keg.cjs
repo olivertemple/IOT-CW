@@ -8,22 +8,8 @@ let volumeMl = parseInt(args[1]) || MAX_VOL;
 const SYSTEM_ID = args[2] || 'tap-01';
 const BEER_NAME = args[3] || 'Hazy IPA';
 
-function printHelpKeg() {
-    console.log('Usage: node sim_keg.cjs <deviceId> <volumeMl> <systemId> <beerName>');
-    console.log('Positional args:');
-    console.log('  deviceId   e.g. keg-A (default keg-A)');
-    console.log('  volumeMl   starting volume in ml (default 20000)');
-    console.log('  systemId   MQTT system id / tap id (default tap-01)');
-    console.log('  beerName   beer name to report (default "Hazy IPA")');
-    console.log('Options: --help, -h   show this help');
-}
-
-if (args.includes('--help') || args.includes('-h')) {
-    printHelpKeg();
-    process.exit(0);
-}
-
 const BROKER = 'mqtt://smart-tap.olivertemple.dev:1883';
+// const BROKER = 'mqtt://0.0.0.0:1883';
 const client = mqtt.connect(BROKER);
 
 const TOPIC_CMD = `${SYSTEM_ID}/keg/${DEVICE_ID}/command`;
@@ -128,8 +114,6 @@ client.on('connect', () => {
     client.publish(TOPIC_STATUS, JSON.stringify(initStatus));
     // Start periodic idle status publishes (every 30s)
     startIdleStatusInterval();
-    // Start slower temperature jitter updates
-    startTempInterval();
 });
 
 client.on('message', (topic, message) => {
@@ -159,11 +143,14 @@ function startPump(config) {
         clearInterval(idleStatusInterval);
         idleStatusInterval = null;
     }
-    // start slower flow jitter updates (separate interval)
-    startFlowJitter();
     pumpInterval = setInterval(() => {
-        // Use the currentFlowLpm value (updated by startFlowJitter())
-        const flowLpm = currentFlowLpm || 6.0;
+        // Base flow (LPM) corresponding to previous fixed behaviour (~6 LPM)
+        const baseFlowLpm = 6.0;
+        // Small jitter +/-0.3 LPM
+        const jitter = (Math.random() - 0.5) * 0.6;
+        const flowLpm = +(baseFlowLpm + jitter).toFixed(2);
+        currentFlowLpm = flowLpm;
+
         // Convert LPM to ml per 500ms tick: (L/min) * 1000 ml/L / 60 sec * 0.5 sec
         const flowRate = Math.round(flowLpm * 1000 / 60 * 0.5);
         volumeMl -= flowRate;
@@ -188,8 +175,7 @@ function stopPump() {
     state = 'IDLE';
     console.log(`${LOG}[LOGIC] Pump Stopped${RESET}`);
     clearInterval(pumpInterval);
-    // stop flow jitter updates and reset flow
-    stopFlowJitter();
+    currentFlowLpm = 0;
 
     const status = buildStatusPayload('IDLE', volumeMl, { pwm_duty: 0 });
     console.log(`DATA: ${JSON.stringify(status)}`);

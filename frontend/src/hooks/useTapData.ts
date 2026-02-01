@@ -39,6 +39,7 @@ export const useSocketConnection = () => {
 
 export const useTapData = (socket: any, isConnected: boolean) => {
   const [allTaps, setAllTaps] = useState<any[]>([]);
+  const [kegTelemetry, setKegTelemetry] = useState<Record<string, any>>({});
   
 
   useEffect(() => {
@@ -65,12 +66,18 @@ export const useTapData = (socket: any, isConnected: boolean) => {
 
     socket.on('tap_update', handleTapUpdate);
     socket.on('keg_update', handleKegUpdate);
+    socket.on('keg_telemetry', (data: any) => {
+      // `data` contains { tapId, kegId, temp, flow, vol_remaining_ml, state }
+      if (!data || !data.kegId) return;
+      setKegTelemetry(prev => ({ ...prev, [data.kegId]: data }));
+    });
     socket.on('tap_deleted', handleTapDeleted);
     socket.on('tap_status_changed', handleTapStatusChanged);
 
     return () => {
       socket.off('tap_update', handleTapUpdate);
       socket.off('keg_update', handleKegUpdate);
+      socket.off('keg_telemetry');
       socket.off('tap_deleted', handleTapDeleted);
       socket.off('tap_status_changed', handleTapStatusChanged);
     };
@@ -88,5 +95,5 @@ export const useTapData = (socket: any, isConnected: boolean) => {
 
   
 
-  return allTaps;
+  return { allTaps, kegTelemetry };
 };

@@ -102,6 +102,23 @@ class MqttService {
     }
     this.lastTelemetry[kegId] = { vol_remaining_ml: payload.vol_remaining_ml, ts: Date.now(), beer_name: beerName };
 
+    // Emit a lightweight telemetry event for any keg telemetry received so
+    // the frontend can display last-known sensor values for non-active kegs
+    // (e.g. always show keg-A temperature) without altering the "activeKeg"
+    // semantics used elsewhere.
+    try {
+      this.io.emit('keg_telemetry', {
+        tapId,
+        kegId,
+        temp: payload.temp_beer_c,
+        flow: payload.flow_lpm,
+        vol_remaining_ml: payload.vol_remaining_ml,
+        state: payload.state
+      });
+    } catch (e) {
+      // best-effort emit
+    }
+
     if (payload.state === 'PUMPING') {
       // When pumping, preserve exact sensor values (no defaults)
       this.tapStates[tapId].activeKeg = {

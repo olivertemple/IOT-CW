@@ -11,7 +11,7 @@ if (argv.includes('--help') || argv.includes('-h')) {
 
 const SYSTEM_ID = argv[0] || 'tap-01';
 const BROKER = 'mqtt://smart-tap.olivertemple.dev:1883';
-
+// const BROKER = 'mqtt://0.0.0.0:1883';
 const KEG_LIST = ['keg-A', 'keg-B', 'keg-C'];
 let activeKegIndex = 0;
 
@@ -137,7 +137,7 @@ function handleKegEmpty() {
 }
 
 function updateScreenFromTelemetry(telemetry) {
-    const pct = Math.round((telemetry.vol_remaining_ml / 20000) * 100);
+    const pct = Math.round((telemetry.vol_remaining_ml / telemetry.vol_total_ml) * 100);
     
     currentVolPct = pct;
     

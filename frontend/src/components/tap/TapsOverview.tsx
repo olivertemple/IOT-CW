@@ -4,11 +4,13 @@ import TapCard from './TapCard';
 
 interface TapsOverviewProps {
   taps: any[];
+  inventory?: any[];
+  kegTelemetry?: Record<string, any>;
   onTapSelect: (tapId: string, tapData: any, kegData: any) => void;
   onTapDelete: (tapId: string) => void;
 }
 
-const TapsOverview: React.FC<TapsOverviewProps> = ({ taps, onTapSelect, onTapDelete }) => {
+const TapsOverview: React.FC<TapsOverviewProps> = ({ taps, inventory = [], kegTelemetry = {}, onTapSelect, onTapDelete }) => {
   if (taps.length === 0) {
     return (
       <div className="glass-panel rounded-[32px] p-12 text-center">
@@ -27,6 +29,8 @@ const TapsOverview: React.FC<TapsOverviewProps> = ({ taps, onTapSelect, onTapDel
         <TapCard
           key={tap.tapId}
           tap={tap}
+          inventory={inventory}
+          kegTelemetry={kegTelemetry}
           onSelect={() => onTapSelect(tap.tapId, tap.tap, tap.activeKeg)}
           onDelete={onTapDelete}
         />

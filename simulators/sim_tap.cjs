@@ -12,7 +12,7 @@ if (argv.includes('--help') || argv.includes('-h')) {
 
 const SYSTEM_ID = argv[0] || 'tap-01';
 const BROKER = 'mqtt://smart-tap.olivertemple.dev:1883';
-
+// const BROKER = 'mqtt://0.0.0.0:1883';
 const client = mqtt.connect(BROKER);
 
 const PUB = '\x1b[32m';

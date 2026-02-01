@@ -23,7 +23,7 @@ const App: React.FC = () => {
   const [kegState, setKegState] = useState<any>(null);
 
   const { socket, isConnected } = useSocketConnection();
-  const allTaps = useTapData(socket, isConnected);
+  const { allTaps, kegTelemetry } = useTapData(socket, isConnected);
   const { inventory, orders } = useInventoryData(socket, isConnected);
   const history = useHistoryData(socket);
   const { alert, showAlert } = useAlerts(socket);
@@ -32,7 +32,14 @@ const App: React.FC = () => {
     const found = allTaps.find(t => t.tapId === selectedTap);
     if (found) {
       setTapState(found.tap || null);
-      setKegState(found.activeKeg || null);
+      // Prefer keg-A telemetry (if present) for displayed temperature
+      const kegA = inventory.find(k => k.tap_id === found.tapId && /-A$/.test(k.keg_id));
+      const overrideTemp = kegA ? kegTelemetry[kegA.keg_id]?.temp : undefined;
+      if (found.activeKeg) {
+        setKegState({ ...found.activeKeg, temp: (overrideTemp !== undefined ? overrideTemp : found.activeKeg.temp) });
+      } else {
+        setKegState(overrideTemp !== undefined ? { id: '---', flow: 0, temp: overrideTemp, state: 'IDLE', volume_remaining_ml: 0, volume_total_ml: 0 } : null);
+      }
     }
   }, [selectedTap, allTaps]);
 
@@ -45,7 +52,16 @@ const App: React.FC = () => {
   const handleTapSelect = (tapId: string, tap: any, keg: any) => {
     setSelectedTap(tapId);
     setTapState(tap);
-    setKegState(keg);
+    // compute possible override from inventory + telemetry
+    const kegA = inventory.find(k => k.tap_id === tapId && /-A$/.test(k.keg_id));
+    const overrideTemp = kegA ? kegTelemetry[kegA.keg_id]?.temp : undefined;
+    if (keg) {
+      setKegState({ ...keg, temp: (overrideTemp !== undefined ? overrideTemp : keg.temp) });
+    } else if (overrideTemp !== undefined) {
+      setKegState({ id: '---', flow: 0, temp: overrideTemp, state: 'IDLE', volume_remaining_ml: 0, volume_total_ml: 0 });
+    } else {
+      setKegState(keg);
+    }
     setActiveView('dashboard');
   };
 
@@ -106,6 +122,8 @@ const App: React.FC = () => {
           {activeView === 'taps' && (
             <TapsOverview
               taps={allTaps}
+              inventory={inventory}
+              kegTelemetry={kegTelemetry}
               onTapSelect={handleTapSelect}
               onTapDelete={handleDeleteTap}
             />
